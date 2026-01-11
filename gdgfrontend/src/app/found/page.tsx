@@ -94,7 +94,8 @@ export default function FoundPage() {
       const screenWidth = window.innerWidth;
       const cameraHeight = Math.floor(screenWidth * (4 / 3));
       const topOffset = Math.floor(
-        (window.innerHeight - cameraHeight) / 2
+        (window.innerHeight - cameraHeight) / 2 -
+          window.innerHeight * 0.05 // push camera slightly up
       );
 
       await CameraPreview.stop().catch(() => {});
@@ -156,7 +157,14 @@ export default function FoundPage() {
       return copy;
     });
 
-    setCurrentShot((s) => s + 1);
+    // auto close after 6th photo
+    if (currentShot === 5) {
+      setTimeout(() => {
+        setIsCameraOpen(false);
+      }, 300);
+    } else {
+      setCurrentShot((s) => s + 1);
+    }
   };
 
   const retakeLast = () => {
@@ -198,42 +206,49 @@ export default function FoundPage() {
         <div id="camera-preview" className="absolute inset-0" />
       )}
 
-      {/* CAMERA MASK */}
-      {isCameraOpen && (
-        <div className="pointer-events-none absolute inset-0 z-30 flex justify-center items-center">
-          <div
-            style={{
-              width: "100%",
-              aspectRatio: "3 / 4",
-              borderRadius: 28,
-              boxShadow: "0 0 0 2000px rgba(0,0,0,0.7)",
-            }}
-          />
-        </div>
-      )}
-
       {/* CAMERA UI */}
       {isCameraOpen && (
-        <>
-          <div className="absolute top-0 left-0 right-0 z-50 px-4 pt-4 flex justify-between items-center">
+        <div className="absolute inset-0 z-50 flex flex-col justify-end px-4 pb-8 pointer-events-none">
+          {/* TOP BAR */}
+          <div className="absolute top-0 left-0 right-0 px-4 pt-4 flex justify-between items-center pointer-events-auto">
             <button onClick={closeCamera}>
               <ArrowLeft size={26} />
             </button>
-
-            <div
-              className="px-4 py-1 rounded-full text-sm"
-              style={{ backgroundColor: THEME.buttonBg }}
-            >
-              Insert {6 - currentShot} more image
-              {6 - currentShot !== 1 && "s"}
-            </div>
-
             <button onClick={toggleFlash}>
               {flashOn ? <Zap size={22} /> : <ZapOff size={22} />}
             </button>
           </div>
 
-          <div className="absolute bottom-6 left-0 right-0 z-50 flex justify-center items-center gap-12">
+          {/* INFO BELOW CAMERA */}
+          <div className="mb-6 text-center pointer-events-none">
+            <p className="text-sm font-medium">
+              Insert image {currentShot + 1} of 6
+            </p>
+            <p
+              className="text-xs mt-1 px-6"
+              style={{ color: THEME.textSecondary }}
+            >
+              Take photos in a clear environment from different angles
+              for the best results
+            </p>
+
+            {/* PROGRESS DOTS */}
+            <div className="mt-3 flex justify-center gap-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{
+                    backgroundColor:
+                      i < currentShot ? THEME.blue : THEME.border,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* CONTROLS */}
+          <div className="flex items-center justify-center gap-12 pointer-events-auto">
             <button
               onClick={retakeLast}
               disabled={currentShot === 0}
@@ -253,7 +268,7 @@ export default function FoundPage() {
 
             <div className="w-6" />
           </div>
-        </>
+        </div>
       )}
 
       {/* FORM */}
@@ -266,10 +281,7 @@ export default function FoundPage() {
 
           {/* PHOTO GRID */}
           <div>
-            <p
-              className="text-sm mb-3"
-              style={{ color: THEME.textSecondary }}
-            >
+            <p className="text-sm mb-3" style={{ color: THEME.textSecondary }}>
               {photosAdded} of 6 photos added
             </p>
 
