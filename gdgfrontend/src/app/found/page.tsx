@@ -215,18 +215,22 @@ export default function FoundPage() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
-    // Calculate 3:4 crop
+    // Explicit 3:4 Aspect Ratio Capture
     const vidW = video.videoWidth;
     const vidH = video.videoHeight;
-    const targetRatio = 3/4;
+    const targetRatio = 3 / 4; 
     
     let cropW, cropH, cropX, cropY;
+
+    // Determine crop area to maintain 3:4 ratio from the center
     if (vidW / vidH > targetRatio) {
+       // Video is wider than 3:4 -> crop excess width
        cropH = vidH; 
        cropW = cropH * targetRatio;
        cropX = (vidW - cropW) / 2;
        cropY = 0;
     } else {
+       // Video is taller than 3:4 -> crop excess height
        cropW = vidW;
        cropH = cropW / targetRatio;
        cropX = 0;
@@ -237,13 +241,9 @@ export default function FoundPage() {
     canvas.height = cropH;
     const ctx = canvas.getContext("2d");
     if(ctx) {
-        // Trigger visual flash feedback
+        // Visual feedback
         setIsFlashing(true);
         setTimeout(() => setIsFlashing(false), 150);
-
-        ctx.scale(-1, 1); // If mirroring front camera, but we use environment usually. 
-        // Actually for environment (rear) we don't mirror.
-        ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset
         
         ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
         const base64 = canvas.toDataURL("image/jpeg", 0.9);
