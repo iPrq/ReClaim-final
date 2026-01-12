@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Camera } from "@capacitor/camera";
 import {
@@ -9,16 +9,13 @@ import {
   IOSSettings,
 } from "capacitor-native-settings";
 import {
-  CameraPreview,
-  CameraPreviewOptions,
-} from "@capacitor-community/camera-preview";
-import {
-  ArrowLeft,
+  X,
   Zap,
   ZapOff,
   RotateCcw,
   Package,
   MapPin,
+  Loader2,
 } from "lucide-react";
 
 /* ================= THEME ================= */
@@ -52,9 +49,13 @@ export default function FoundPage() {
   );
 
   const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [cameraRunning, setCameraRunning] = useState(false);
   const [currentShot, setCurrentShot] = useState(0);
   const [flashOn, setFlashOn] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
+  const [isFlashing, setIsFlashing] = useState(false); // Visual feedback state
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [itemName, setItemName] = useState("");
   const [itemDescription, setItemDescription] = useState("");
@@ -148,106 +149,139 @@ export default function FoundPage() {
   /* ================= CAMERA ================= */
 
   useEffect(() => {
-    if (!isCameraOpen) return;
+    let stream: MediaStream | null = null;
 
-    const startCamera = async () => {
-      if (!Capacitor.isNativePlatform()) return;
+    const initCamera = async () => {
+      if (!isCameraOpen) return;
+      setVideoReady(false);
 
-      const screenWidth = window.innerWidth;
-      const cameraHeight = Math.floor(screenWidth * (4 / 3));
-      const topOffset = Math.floor(
-        (window.innerHeight - cameraHeight) / 2 -
-          window.innerHeight * 0.05 // push camera slightly up
-      );
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
 
-      await CameraPreview.stop().catch(() => {});
-
-      const options: CameraPreviewOptions = {
-        position: "rear",
-        parent: "camera-preview",
-        toBack: false,
-        width: screenWidth,
-        height: cameraHeight,
-        x: 0,
-        y: topOffset,
-      };
-
-      await CameraPreview.start(options);
-      setCameraRunning(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+      } catch (err) {
+        console.error("Camera error", err);
+        setIsCameraOpen(false);
+      }
     };
 
-    startCamera();
+    if (isCameraOpen) {
+      initCamera();
+    }
 
     return () => {
-      CameraPreview.stop().catch(() => {});
-      setCameraRunning(false);
+      if (stream) {
+        stream.getTracks().forEach((t) => t.stop());
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
     };
   }, [isCameraOpen]);
 
   /* ================= CAMERA ACTIONS ================= */
 
   const openCamera = async () => {
-    if (!Capacitor.isNativePlatform()) return;
-
-    const permission = await ensureCameraPermission();
-    if (permission === "granted") {
-      setCurrentShot(itemFiles.filter(Boolean).length);
-      setIsCameraOpen(true);
-      return;
+    // Native permission check if wrapper is used, otherwise browser handles it
+    if (Capacitor.isNativePlatform()) {
+      const status = await Camera.checkPermissions();
+      if (status.camera !== "granted") {
+        const req = await Camera.requestPermissions();
+        if (req.camera !== "granted") {
+           // Optionally ask to open settings
+           if(window.confirm("Camera permission required. Open settings?")) {
+              await openSystemSettings();
+           }
+           return;
+        }
+      }
     }
 
-    if (
-      window.confirm(
-        "Camera permission is required.\nOpen system settings?"
-      )
-    ) {
-      await openSystemSettings();
-    }
+    setCurrentShot(itemFiles.filter(Boolean).length);
+    setIsCameraOpen(true);
   };
 
   const closeCamera = () => setIsCameraOpen(false);
 
   const takePhoto = async () => {
-    if (!cameraRunning || currentShot >= 6) return;
+    if (!videoRef.current || !canvasRef.current || currentShot >= 6) return;
 
-    const result = await CameraPreview.capture({ quality: 90 });
-    const base64 = `data:image/jpeg;base64,${result.value}`;
-
-    setItemFiles((prev) => {
-      const copy = [...prev];
-      copy[currentShot] = base64;
-      return copy;
-    });
-
-    // auto close after 6th photo
-    if (currentShot === 5) {
-      setTimeout(() => {
-        setIsCameraOpen(false);
-      }, 300);
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    // Calculate 3:4 crop
+    const vidW = video.videoWidth;
+    const vidH = video.videoHeight;
+    const targetRatio = 3/4;
+    
+    let cropW, cropH, cropX, cropY;
+    if (vidW / vidH > targetRatio) {
+       cropH = vidH; 
+       cropW = cropH * targetRatio;
+       cropX = (vidW - cropW) / 2;
+       cropY = 0;
     } else {
-      setCurrentShot((s) => s + 1);
+       cropW = vidW;
+       cropH = cropW / targetRatio;
+       cropX = 0;
+       cropY = (vidH - cropH) / 2;
+    }
+    
+    canvas.width = cropW;
+    canvas.height = cropH;
+    const ctx = canvas.getContext("2d");
+    if(ctx) {
+        // Trigger visual flash feedback
+        setIsFlashing(true);
+        setTimeout(() => setIsFlashing(false), 150);
+
+        ctx.scale(-1, 1); // If mirroring front camera, but we use environment usually. 
+        // Actually for environment (rear) we don't mirror.
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset
+        
+        ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+        const base64 = canvas.toDataURL("image/jpeg", 0.9);
+        
+        setItemFiles((prev) => {
+          const copy = [...prev];
+          copy[currentShot] = base64;
+          return copy;
+        });
+
+        if (currentShot === 5) {
+          setTimeout(() => setIsCameraOpen(false), 300);
+        } else {
+          setCurrentShot((s) => s + 1);
+        }
     }
   };
 
   const retakeLast = () => {
-    if (!cameraRunning || currentShot === 0) return;
-
+    if (currentShot === 0) return;
     setItemFiles((prev) => {
       const copy = [...prev];
       copy[currentShot - 1] = null;
       return copy;
     });
-
     setCurrentShot((s) => s - 1);
   };
 
   const toggleFlash = async () => {
-    if (!cameraRunning) return;
-    const next = !flashOn;
-    setFlashOn(next);
-    await CameraPreview.setFlashMode({
-      flashMode: next ? "on" : "off",
-    });
+    if (!videoRef.current || !videoRef.current.srcObject) return;
+    const track = (videoRef.current.srcObject as MediaStream).getVideoTracks()[0];
+    try {
+        // @ts-ignore
+        await track.applyConstraints({ advanced: [{ torch: !flashOn }] });
+        setFlashOn(!flashOn);
+    } catch(e) {
+        console.error("Flash error", e);
+    }
   };
 
 
@@ -261,73 +295,90 @@ export default function FoundPage() {
       className="min-h-screen relative"
       style={{ backgroundColor: THEME.bg, color: THEME.textPrimary }}
     >
-      {/* CAMERA PREVIEW */}
+        {/* Hidden Canvas */}
+        <canvas ref={canvasRef} className="hidden" />
+
+      {/* CAMERA OVERLAY - Z-60 to hide NavBar */}
       {isCameraOpen && (
-        <div id="camera-preview" className="absolute inset-0" />
-      )}
-
-      {/* CAMERA UI */}
-      {isCameraOpen && (
-        <div className="absolute inset-0 z-50 flex flex-col justify-end px-4 pb-8 pointer-events-none">
-          {/* TOP BAR */}
-          <div className="absolute top-0 left-0 right-0 px-4 pt-4 flex justify-between items-center pointer-events-auto">
-            <button onClick={closeCamera}>
-              <ArrowLeft size={26} />
-            </button>
-            <button onClick={toggleFlash}>
-              {flashOn ? <Zap size={22} /> : <ZapOff size={22} />}
-            </button>
-          </div>
-
-          {/* INFO BELOW CAMERA */}
-          <div className="mb-6 text-center pointer-events-none">
-            <p className="text-sm font-medium">
-              Insert image {currentShot + 1} of 6
-            </p>
-            <p
-              className="text-xs mt-1 px-6"
-              style={{ color: THEME.textSecondary }}
-            >
-              Take photos in a clear environment from different angles
-              for the best results
-            </p>
-
-            {/* PROGRESS DOTS */}
-            <div className="mt-3 flex justify-center gap-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <span
-                  key={i}
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{
-                    backgroundColor:
-                      i < currentShot ? THEME.blue : THEME.border,
-                  }}
-                />
-              ))}
+        <div className="fixed inset-0 z-[60] flex flex-col bg-black pt-16">
+            
+            {/* TOP BAR - MOVED OUT OF VIDEO */}
+            <div className="absolute top-0 left-0 right-0 px-4 pt-4 flex justify-between items-center z-20">
+                <button onClick={closeCamera} className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full border border-white/10">
+                  <X size={26} />
+                </button>
+                <button onClick={toggleFlash} className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full border border-white/10">
+                  {flashOn ? <Zap size={22} className="text-yellow-400 fill-current" /> : <ZapOff size={22} />}
+                </button>
             </div>
-          </div>
 
-          {/* CONTROLS */}
-          <div className="flex items-center justify-center gap-12 pointer-events-auto">
-            <button
-              onClick={retakeLast}
-              disabled={currentShot === 0}
-              style={{ opacity: currentShot === 0 ? 0.4 : 1 }}
-            >
-              <RotateCcw size={26} />
-            </button>
+           {/* VIDEO CONTAINER - Rounded & Aspect Ratio */}
+           <div className="relative mx-4 mt-2 aspect-[4/5] rounded-3xl overflow-hidden ring-1 ring-zinc-800 bg-zinc-900">
+                {!videoReady && (
+                   <div className="absolute inset-0 flex items-center justify-center z-10">
+                      <Loader2 size={48} className="animate-spin text-zinc-500" />
+                   </div>
+                )}
+                
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    onPlaying={() => setVideoReady(true)}
+                    className={`w-full h-full object-cover transition-opacity duration-300 ${videoReady ? 'opacity-100' : 'opacity-0'}`}
+                />
 
-            <button
-              onClick={takePhoto}
-              className="w-20 h-20 rounded-full"
-              style={{
-                border: `6px solid ${THEME.yellow}`,
-                backgroundColor: THEME.textPrimary,
-              }}
-            />
+                {/* FLASH OVERLAY */}
+                <div className={`absolute inset-0 bg-white pointer-events-none transition-opacity duration-150 ease-out ${isFlashing ? 'opacity-100' : 'opacity-0'}`} />
+           </div>
 
-            <div className="w-6" />
-          </div>
+           {/* CONTROLS BELOW */}
+           <div className="flex-1 flex flex-col justify-end pb-8 relative z-20">
+              {/* INFO */}
+              <div className="mb-6 text-center">
+                <p className="text-sm font-medium">
+                  Insert image {currentShot + 1} of 6
+                </p>
+                <p className="text-xs mt-1 px-6 text-zinc-400">
+                  Take photos in a clear environment from different angles
+                </p>
+                
+                {/* PROGRESS DOTS */}
+                <div className="mt-3 flex justify-center gap-2">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <span
+                      key={i}
+                      className="w-2.5 h-2.5 rounded-full transition-colors"
+                      style={{
+                        backgroundColor: i < currentShot ? THEME.blue : 'rgba(255,255,255,0.1)',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div className="flex items-center justify-center gap-12 pb-4">
+                 <button
+                   onClick={retakeLast}
+                   disabled={currentShot === 0}
+                   style={{ opacity: currentShot === 0 ? 0 : 1 }}
+                   className="p-3 rounded-full bg-zinc-800 text-zinc-300 transition-opacity"
+                 >
+                    <RotateCcw size={24} />
+                 </button>
+
+                 <button
+                    onClick={takePhoto}
+                    className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center active:scale-95 transition-transform"
+                 >
+                     <div className="w-16 h-16 rounded-full bg-white"/>
+                 </button>
+                 
+                 <div className="w-[50px]"></div> {/* Spacer */}
+              </div>
+           </div>
         </div>
       )}
 
