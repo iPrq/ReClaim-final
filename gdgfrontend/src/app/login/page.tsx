@@ -46,11 +46,11 @@ export default function LoginPage() {
   };
 
   const handleGithubSignIn = () => {
-    alert("GitHub Sign-In not implemented yet");
+    router.push("/selector")
   };
 
   return (
-    <div className="bg-[#0F172A] min-h-screen overflow-y-auto">
+    <div className="bg-[#000000] min-h-screen overflow-y-auto">
       <div className="relative h-screen flex flex-col">
         {/* Background Image */}
         <div className="absolute inset-0 h-[70vh] top-0">

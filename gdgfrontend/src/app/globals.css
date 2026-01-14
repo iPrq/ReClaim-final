@@ -1,26 +1,46 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #FFFFFF;
+  
+  /* Custom Palette */
+  --text-secondary: #B0B0B0;
+  --accent-blue: #007BFF;
+  --accent-red: #FF3B30;
+  --accent-yellow: #FFD60A;
+  --btn-bg: #1C1C1E;
+  --btn-text: #FFFFFF;
+  --btn-hover: #2C2C2E;
+  --border-color: #3A3A3C;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-poppins);
   --font-mono: var(--font-geist-mono);
+  
+  /* Expose custom colors to Tailwind */
+  --color-secondary-text: var(--text-secondary);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-red: var(--accent-red);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-btn-bg: var(--btn-bg);
+  --color-btn-text: var(--btn-text);
+  --color-btn-hover: var(--btn-hover);
+  --color-border-custom: var(--border-color);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #000000;
+    --foreground: #FFFFFF;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-jersey-10), sans-serif;
+  font-family: var(--font-poppins), sans-serif;
 }

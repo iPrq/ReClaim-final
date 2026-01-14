@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientLayout from "@/app/client-layout";
 import { Jersey_10 } from "next/font/google";
@@ -10,9 +10,10 @@ export const jersey = Jersey_10({
   variable: "--font-jersey-10",
 });
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 const geistMono = Geist_Mono({
@@ -33,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${jersey.variable} antialiased bg-[#0F172A] text-white`}
+        className={`${poppins.variable} ${geistMono.variable} ${jersey.variable} antialiased bg-[#0F172A] text-white`}
       >
         <ClientLayout>{children}</ClientLayout>
       </body>

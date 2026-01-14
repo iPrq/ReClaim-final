@@ -1,111 +1,152 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
-/* ================= TITLE ================= */
+const THEME = {
+  bg: "#000000",
+  textPrimary: "#FFFFFF",
+  textSecondary: "#B0B0B0",
+  blue: "#007BFF",
+  red: "#FF3B30",
+  yellow: "#FFD60A",
+  buttonBg: "#1C1C1E",
+  buttonHover: "#2C2C2E",
+  border: "#3A3A3C",
+};
 
-function PageTitleText() {
+export default function OptionsPage() {
+  const router = useRouter();
+
   return (
-    <div className="h-[102px] relative shrink-0 w-full">
-      <div className="flex flex-row justify-center size-full">
-        <div className="content-stretch flex items-start justify-center pb-[6px] pl-0 pr-[10px] pt-[10px] relative size-full">
-          <p className="font-[family-name:var(--font-jersey-10)] leading-[40px] not-italic relative shrink-0 text-[52px] text-white w-[310px] text-center">
-            What Brings you here?
+    <div
+      className="relative min-h-screen w-full overflow-hidden px-4 py-12"
+      style={{ backgroundColor: THEME.bg }}
+    >
+      {/* ================= BACKGROUND GLOW ================= */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <motion.div
+          animate={{ scale: [1, 1.15, 1] }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-1/2 -left-1/2 w-[120vw] h-[120vw] rounded-full blur-[120px]"
+          style={{ backgroundColor: THEME.blue, opacity: 0.07 }}
+        />
+        <motion.div
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-0 right-0 w-[100vw] h-[100vw] rounded-full blur-[120px]"
+          style={{ backgroundColor: THEME.red, opacity: 0.07 }}
+        />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md mx-auto flex flex-col gap-10">
+
+        {/* ================= TITLE (LEFT-CENTERED) ================= */}
+        <motion.div
+          initial={{ opacity: 0, y: -16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-left"
+        >
+          <h1
+            className="text-5xl font-bold leading-tight"
+            style={{ color: THEME.textPrimary }}
+          >
+            What brings you here?
+          </h1>
+
+          {/* Bumbly text */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="mt-3 text-base"
+            style={{ color: THEME.textSecondary }}
+          >
+            Lost something important… or did you just help someone find theirs?
+          </motion.p>
+
+          {/* Campus line */}
+          <p
+            className="mt-4 text-sm flex items-center gap-2"
+            style={{ color: THEME.textSecondary }}
+          >
+            📍 RV University · Main Campus
+            <span
+              className="px-2 py-[2px] rounded-full text-xs border"
+              style={{
+                color: THEME.yellow,
+                borderColor: THEME.border,
+              }}
+            >
+              Verified
+            </span>
           </p>
+        </motion.div>
+
+        {/* ================= ACTION CARDS ================= */}
+        <div className="flex flex-col gap-6">
+          <SelectionCard
+            title="Lost Something?"
+            image="/images/Lostpersonimage.png"
+            accent={THEME.red}
+            onClick={() => router.push("/lost")}
+          />
+
+          <SelectionCard
+            title="Found Something?"
+            image="/images/Founditemperson.png"
+            accent={THEME.blue}
+            onClick={() => router.push("/found")}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-function TitleArea() {
-  return (
-    <div className="content-stretch flex flex-col items-start relative shrink-0">
-      <PageTitleText />
-    </div>
-  );
-}
+/* ================= CARD COMPONENT ================= */
 
-/* ================= LOST CARD ================= */
-
-function LostPersonIllustration() {
+function SelectionCard({
+  title,
+  image,
+  accent,
+  onClick,
+}: {
+  title: string;
+  image: string;
+  accent: string;
+  onClick: () => void;
+}) {
   return (
-    <div className="h-[214px] w-[166px] flex items-center justify-center">
-      <img
-        src="/images/Lostpersonimage.png"
-        alt="Lost person"
-        className="max-w-full max-h-full object-contain"
-      />
-    </div>
-  );
-}
-
-function LostCard({ onClick }: { onClick: () => void }) {
-  return (
-    <div
+    <motion.div
+      whileHover={{ scale: 1.03, y: -4 }}
+      whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="bg-[#ffa089] rounded-[20px] shadow cursor-pointer hover:scale-105 transition active:scale-95 w-[400px]"
+      className="cursor-pointer rounded-3xl overflow-hidden"
+      style={{
+        backgroundColor: accent,
+        border: `1px solid ${THEME.border}`,
+      }}
     >
-      <div className="flex flex-col items-center p-6 gap-4">
-        <LostPersonIllustration />
-        <p className="font-[family-name:var(--font-jersey-10)] text-[36px] text-white text-center">
-          Lost Something?
-        </p>
+      <div className="relative p-6 flex flex-col items-center gap-5">
+        {/* Image */}
+        <motion.img
+          src={image}
+          alt={title}
+          className="h-44 object-contain"
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        />
+
+        {/* Title */}
+        <div className="w-full text-center py-2">
+          <p className="text-3xl font-bold text-white">
+            {title}
+          </p>
+        </div>
       </div>
-    </div>
-  );
-}
-
-/* ================= FOUND CARD ================= */
-
-function FoundPersonIllustration() {
-  return (
-    <div className="h-[230px] w-[166px] flex items-center justify-center">
-      <img
-        src="/images/Founditemperson.png"
-        alt="Found item"
-        className="max-w-full max-h-full object-contain"
-      />
-    </div>
-  );
-}
-
-function FoundCard({ onClick }: { onClick: () => void }) {
-  return (
-    <div
-      onClick={onClick}
-      className="bg-[#ade8f4] rounded-[20px] cursor-pointer hover:scale-105 transition active:scale-95 w-[400px]"
-    >
-      <div className="flex flex-col items-center p-6 gap-4">
-        <FoundPersonIllustration />
-        <p className="font-[family-name:var(--font-jersey-10)] text-[36px] text-white text-center">
-          Found Something?
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ================= MAIN ================= */
-
-export default function OptionsPage() {
-  const router = useRouter();
-  const [showCampus, setShowCampus] = useState(false);
-
-  /* ✅ SWITCH BACK TO CAMPUS COMPONENT */
-
-  return (
-    <div className="bg-[#1E293B] flex flex-col gap-6 items-center justify-center px-5 py-12 min-h-screen">
-      <TitleArea />
-
-      {/* ✅ ROUTE TO /lost */}
-      <LostCard onClick={() => router.push("/lost")} />
-
-      {/* ✅ ROUTE TO /found */}
-      <FoundCard onClick={() => router.push("/found")} />
-
-      {/* ✅ BACK TO CAMPUS BUTTON */}
-    </div>
+    </motion.div>
   );
 }
