@@ -22,7 +22,8 @@ export default function ProfileApp() {
   const router = useRouter();
   const [firebaseUser, setFirebaseUser] = useState<any>(auth.currentUser);
   const [screen, setScreen] = useState("profile");
-  const [phone, setPhone] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -38,9 +39,17 @@ export default function ProfileApp() {
     }
   };
 
-  const getUserName = () => firebaseUser?.displayName ?? "Guest User";
+  const getUserName = () => firebaseUser?.displayName ?? "Unknown User";
   const getUserEmail = () => firebaseUser?.email ?? "No email";
   const getPhotoUrl = () => firebaseUser?.photoURL;
+
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
 
   const pageVariants = {
     initial: { opacity: 0, x: 20 },
@@ -138,7 +147,7 @@ export default function ProfileApp() {
                                   <img src={getPhotoUrl()} alt="Profile" className="h-full w-full object-cover" />
                                ) : (
                                   <div className="flex h-full w-full items-center justify-center bg-neutral-700 text-3xl font-bold text-white">
-                                    {getUserName()?.charAt(0).toUpperCase()}
+                                    {getInitials(getUserName())}
                                   </div>
                                )}
                             </div>
@@ -152,8 +161,8 @@ export default function ProfileApp() {
                               icon={Phone} 
                               label="Phone" 
                               editable 
-                              value={phone} 
-                              onChange={(val: string) => setPhone(val)}
+                              value={mobileNumber} 
+                              onChange={(val: string) => setMobileNumber(val)}
                               placeholder="Add Phone Number"
                             />
                             <InfoRow icon={School} label="College" value="RV University" />
@@ -165,8 +174,12 @@ export default function ProfileApp() {
 
                  {screen === "notifications" && (
                     <>
-                      <SwitchCard title="Email Notifications" subtitle="Receive updates via email" checked />
-                      <SwitchCard title="Push Notifications" subtitle="Receive updates on your device" checked={false} />
+                      <SwitchCard 
+                        title="Notifications" 
+                        subtitle={notificationsEnabled ? "Allow" : "Off"} 
+                        checked={notificationsEnabled}
+                        onToggle={() => setNotificationsEnabled(!notificationsEnabled)} 
+                      />
                       <div className="mt-4">
                         <PrimaryButton label="Save Preferences" />
                       </div>
@@ -295,9 +308,12 @@ function PrimaryButton({ label }: { label: string }) {
   )
 }
 
-function SwitchCard({ title, subtitle, checked }: any) {
+function SwitchCard({ title, subtitle, checked, onToggle }: any) {
    return (
-     <div className="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+     <div 
+       className="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-900 p-4 cursor-pointer"
+       onClick={onToggle}
+     >
        <div>
           <h3 className="font-medium text-neutral-200">{title}</h3>
           <p className="text-xs text-neutral-500">{subtitle}</p>
