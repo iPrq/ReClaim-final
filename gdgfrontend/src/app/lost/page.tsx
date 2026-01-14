@@ -3,11 +3,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
-import {
-  NativeSettings,
-  AndroidSettings,
-  IOSSettings,
-} from "capacitor-native-settings";
 import { AnimatePresence, motion } from "framer-motion";
 import { Image, Zap, ZapOff, X } from "lucide-react";
 
@@ -26,26 +21,39 @@ interface Result {
   confidence: number;
 }
 
+const base64ToFile = (dataUrl: string, filename: string) => {
+  const arr = dataUrl.split(',');
+  const mime = arr[0].match(/:(.*?);/)![1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+};
+
 const submitLostItem = async (
-  itemName: string,
-  description: string,
   imageBase64: string | null
 ): Promise<Result> => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/analyze`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ itemName, description, image: imageBase64 }),
-  });
-  return await res.json();
+   if (!imageBase64) throw new Error("No image data");
+
+   const file = base64ToFile(imageBase64, "capture.jpg");
+   const fd = new FormData();
+   fd.append("file", file);
+
+   const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/search`, {
+     method: "POST",
+     body: fd,
+   });
+   return await res.json();
 };
 
 export default function Page() {
-  // const [openReport, setOpenReport] = useState(false); // Removed
   const [openConfirm, setOpenConfirm] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
 
-  // const [itemName, setItemName] = useState(""); // Removed
-  // const [description, setDescription] = useState(""); // Removed
+
   const [loading, setLoading] = useState(false);
 
   const [cameraActive, setCameraActive] = useState(false);
@@ -204,9 +212,13 @@ export default function Page() {
   /* ---------- AI ---------- */
   const handleFormSubmission = async () => {
     setLoading(true);
-    // Pass empty strings since we aren't collecting name/desc anymore
-    const data = await submitLostItem("", "", imageBase64);
-    setResult(data);
+    try {
+      const data = await submitLostItem(imageBase64);
+      setResult(data);
+    } catch (error) {
+       console.error("Submission error", error);
+       // Handle match: false or error state if needed
+    }
     setOpenConfirm(false); 
     setLoading(false);
   };
