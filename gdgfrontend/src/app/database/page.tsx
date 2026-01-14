@@ -1,19 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type L from "leaflet";
+import { useEffect, useState } from "react";
 
 /* ================= TYPES ================= */
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL!;
-
 export interface ReportedItem {
-  id: string;
-  itemName: string;
-  location: string;
-  locationDescription?: string;
+  id: string | number;
+  name: string;
+  description: string;
+  foundLocation: string;
+  currentLocation: string;
+  dateReported: string;
   images: string[];
-  timestamp: string;
-  type: "lost" | "found";
 }
 
 interface ApiItem {
@@ -25,247 +22,279 @@ interface ItemsApiResponse {
   items?: ApiItem[];
 }
 
-/* ================= ITEM CARD ================= */
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-function ItemCard({
-  image,
-  title,
-  description,
-  onSeeMore,
-}: {
-  image: string;
-  title: string;
-  description: string;
-  onSeeMore: () => void;
-}) {
+/* ================= THEME ================= */
+const THEME = {
+  bg: "#000000",
+  textPrimary: "#FFFFFF",
+  textSecondary: "#9CA3AF",
+  yellow: "#FFD60A",
+  buttonBg: "#1C1C1E",
+  border: "#27272A",
+};
+
+/* ================= MOCK DATA ================= */
+const MOCK_ITEMS: ReportedItem[] = [
+  {
+    id: 1,
+    name: "Black Backpack",
+    description:
+      "Medium-sized black backpack with laptop sleeve and front zipper pocket. No visible brand logo.",
+    foundLocation: "Main Library Entrance",
+    currentLocation: "Security Office – Room 104",
+    dateReported: "2026-01-10T14:30:00",
+    images: [
+      "https://images.unsplash.com/photo-1622560480654-d96214fdc887?w=800",
+      "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800",
+      "https://images.unsplash.com/photo-1616628182506-8c2f7e5f6f19?w=800",
+    ],
+  },
+  {
+    id: 2,
+    name: "Silver Wrist Watch",
+    description:
+      "Analog silver wrist watch with black dial. Slight scratch on the clasp.",
+    foundLocation: "Cafeteria Table 7",
+    currentLocation: "Lost & Found Counter",
+    dateReported: "2026-01-11T09:15:00",
+    images: [
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
+      "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=800",
+    ],
+  },
+];
+
+/* ================= MAIN COMPONENT ================= */
+export default function LostAndFound() {
+  const [items, setItems] = useState<ReportedItem[]>(MOCK_ITEMS);
+  const [sortBy, setSortBy] = useState("name");
+  const [activeItem, setActiveItem] = useState<ReportedItem | null>(null);
+
+  /* -------- FETCH DATA (Backend integration in comments) -------- */
+  useEffect(() => {
+    /*
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/items-list`);
+        const data: ItemsApiResponse = await res.json();
+
+        // Transform API data to match ReportedItem interface
+        const transformed: ReportedItem[] = (data.items ?? []).map((item, index) => ({
+          id: item.name ?? `item-${index}`,
+          name: item.name ?? "Unknown Item",
+          description: "No description yet",
+          foundLocation: "RV University",
+          currentLocation: "College Front Desk",
+          dateReported: new Date().toISOString(),
+          images: [
+            item.thumbnail ?? "https://via.placeholder.com/400x300?text=No+Image"
+          ]
+        }));
+        
+        setItems(transformed);
+      } catch (e) {
+        console.error("Backend fetch failed", e);
+        // Fallback to mock data is already initial state
+      }
+    };
+    fetchData();
+    */
+  }, []);
+
+  const sortedItems = [...items].sort((a, b) => {
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    return new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime();
+  });
+
   return (
     <div
-      onClick={onSeeMore}
-      className="bg-[#0F172A] w-full max-w-sm rounded-[20px] overflow-hidden shadow-lg border border-white/10 cursor-pointer hover:scale-[1.02] transition-transform active:scale-[0.98]"
+      className="min-h-screen px-4 py-10"
+      style={{ backgroundColor: THEME.bg, color: THEME.textPrimary }}
+    >
+      <div className="max-w-6xl mx-auto">
+        {/* HEADER */}
+        <h1 className="text-3xl font-semibold">
+          Find Reported Items
+        </h1>
+        <p
+          className="mt-1 text-sm"
+          style={{ color: THEME.textSecondary }}
+        >
+          Helping lost belongings find their way back safely 
+        </p>
+
+        {/* SORT CONTROLS */}
+        <div className="mt-6 flex gap-3">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="rounded-lg px-4 py-2 text-sm outline-none"
+            style={{
+              backgroundColor: THEME.buttonBg,
+              border: `1px solid ${THEME.border}`,
+              color: THEME.textPrimary,
+            }}
+          >
+            <option value="name">Name A–Z</option>
+            <option value="date">Date & Time</option>
+          </select>
+        </div>
+
+        {/* GRID */}
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sortedItems.map((item) => (
+            <ItemCard
+              key={item.id}
+              item={item}
+              onClick={() => setActiveItem(item)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* MODAL */}
+      {activeItem && (
+        <ItemModal
+          item={activeItem}
+          onClose={() => setActiveItem(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ================= ITEM CARD ================= */
+function ItemCard({ item, onClick }: { item: ReportedItem; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="text-left w-full rounded-xl overflow-hidden transition hover:scale-[1.02]"
+      style={{
+        backgroundColor: "#0A0A0A",
+        border: `1px solid ${THEME.border}`,
+      }}
     >
       <img
-        src={image}
-        alt={title}
-        className="w-full h-[180px] object-cover bg-slate-800"
+        src={item.images[0]}
+        alt={item.name}
+        className="h-40 w-full object-cover"
         onError={(e) => {
           e.currentTarget.src =
             "https://via.placeholder.com/400x300?text=No+Image";
         }}
       />
-      <div className="p-4 space-y-2">
-        <h3 className="font-[family-name:var(--font-jersey-10)] text-[22px] text-white">
-          {title}
-        </h3>
-        <p className="text-sm text-white/60">{description}</p>
-        <p className="text-xs text-emerald-400 uppercase tracking-wide">
-          Tap to view details
+
+      <div className="p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-medium text-white">{item.name}</h3>
+          <span
+            className="text-xs px-2 py-1 rounded-full"
+            style={{
+              backgroundColor: `${THEME.yellow}20`,
+              color: THEME.yellow,
+            }}
+          >
+            FOUND
+          </span>
+        </div>
+
+        <p
+          className="mt-2 text-sm line-clamp-2"
+          style={{ color: THEME.textSecondary }}
+        >
+          {item.description}
         </p>
       </div>
-    </div>
+    </button>
   );
 }
 
-/* ================= ITEM DETAIL MODAL ================= */
-
-function ItemDetailModal({
-  item,
-  onClose,
-}: {
-  item: ReportedItem;
-  onClose: () => void;
-}) {
+/* ================= MODAL ================= */
+function ItemModal({ item, onClose }: { item: ReportedItem; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-[999] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4">
-      <div className="bg-[#1E293B] w-full max-w-lg rounded-[20px] shadow-2xl border border-white/10 overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h2 className="font-[family-name:var(--font-jersey-10)] text-[26px] text-white">
-            {item.itemName}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-white/60 hover:text-white text-xl"
-          >
-            ✕
-          </button>
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+      <div className="relative w-full max-w-4xl mx-4">
+        {/* TOP HANDLE / ARROW */}
+        <div className="flex justify-center mb-3">
+          <div className="h-1.5 w-12 rounded-full bg-zinc-600" />
         </div>
 
-        <div className="flex gap-2 overflow-x-auto p-4">
-          {item.images.map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              alt={`item-${i}`}
-              className="h-[140px] w-[140px] object-cover rounded-[12px] bg-slate-700"
-            />
-          ))}
-        </div>
-
-        <div className="p-4 space-y-2 text-white/80 text-sm">
-          <p>
-            <span className="text-white font-semibold">Status:</span>{" "}
-            {item.type === "lost" ? "Lost" : "Found"}
-          </p>
-          <p>
-            <span className="text-white font-semibold">Location:</span>{" "}
-            {item.location}
-          </p>
-          <p className="text-xs text-white/40">
-            Reported on {new Date(item.timestamp).toLocaleString()}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ================= DASHBOARD ================= */
-
-export default function Dashboard() {
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.LayerGroup | null>(null);
-
-  const [items, setItems] = useState<ReportedItem[]>([]);
-  const [selectedItem, setSelectedItem] = useState<ReportedItem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  /* -------- FETCH DATA -------- */
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`${BACKEND_URL}/items-list`);
-
-        const data: ItemsApiResponse = await res.json();
-
-        const transformed: ReportedItem[] = (data.items ?? []).map(
-          (item, index) => ({
-            id: item.name ?? `item-${index}`,
-            itemName: item.name ?? "Unknown Item",
-            location: "RV University",
-            images: [
-              item.thumbnail ??
-                "https://via.placeholder.com/400x300?text=No+Image",
-            ],
-            timestamp: new Date().toISOString(),
-            type: "found",
-          })
-        );
-
-        setItems(transformed);
-      } catch (e) {
-        setError("Failed to load items");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  /* -------- MAP INIT (ONCE) -------- */
-  useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
-
-    import("leaflet").then((L) => {
-      interface LeafletIconPrototype {
-        _getIconUrl?: () => string;
-      }
-
-      const iconProto = L.Icon.Default
-        .prototype as unknown as LeafletIconPrototype;
-
-      delete iconProto._getIconUrl;
-
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl:
-          "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-        shadowUrl:
-          "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-      });
-
-      const map = L.map(mapContainerRef.current!, {
-        center: [12.9249, 77.498],
-        zoom: 15,
-        zoomControl: false,
-        attributionControl: false,
-      });
-
-      L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        { subdomains: "abcd", maxZoom: 20 }
-      ).addTo(map);
-
-      markersRef.current = L.layerGroup().addTo(map);
-      mapRef.current = map;
-    });
-
-    return () => {
-      mapRef.current?.remove();
-      mapRef.current = null;
-    };
-  }, []);
-
-  /* -------- MARKERS UPDATE -------- */
-  useEffect(() => {
-    if (!mapRef.current || !markersRef.current) return;
-
-    import("leaflet").then((L) => {
-      markersRef.current!.clearLayers();
-
-      items.forEach((item) => {
-        const lat = 12.9249 + (Math.random() - 0.5) * 0.01;
-        const lng = 77.498 + (Math.random() - 0.5) * 0.01;
-
-        L.marker([lat, lng])
-          .addTo(markersRef.current!)
-          .on("click", () => setSelectedItem(item));
-      });
-    });
-  }, [items]);
-
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1E293B] text-white">
-        Loading campus database…
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1E293B] text-red-400">
-        {error}
-      </div>
-    );
-
-  return (
-    <div className="bg-[#1E293B] min-h-screen overflow-y-auto">
-      <div className="relative h-[400px] w-full">
+        {/* MODAL CARD */}
         <div
-          ref={mapContainerRef}
-          className="absolute inset-0 rounded-b-[20px]"
-        />
-      </div>
+          className="rounded-2xl overflow-hidden shadow-xl"
+          style={{ backgroundColor: "#0A0A0A" }}
+        >
+          {/* IMAGE GALLERY */}
+          <div className="grid grid-cols-3 gap-1">
+            {item.images.map((img, index) => (
+              <img
+                key={index}
+                src={img}
+                alt=""
+                className="h-44 w-full object-cover"
+              />
+            ))}
+          </div>
 
-      <div className="px-6 flex flex-col items-center space-y-6 pb-32 -mt-20">
-        {items.map((item) => (
-          <ItemCard
-            key={item.id}
-            image={item.images[0]}
-            title={item.itemName}
-            description={`Found at ${item.location}`}
-            onSeeMore={() => setSelectedItem(item)}
-          />
-        ))}
-      </div>
+          {/* CONTENT */}
+          <div className="p-8">
+            {/* HEADER */}
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold text-white">
+                  {item.name}
+                </h2>
+                <span className="mt-2 inline-block text-xs tracking-wide px-3 py-1 rounded-full bg-yellow-400/10 text-yellow-400">
+                  FOUND ITEM
+                </span>
+              </div>
 
-      {selectedItem && (
-        <ItemDetailModal
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-        />
-      )}
+              <button
+                onClick={onClose}
+                className="text-zinc-400 hover:text-white text-xl"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* DESCRIPTION */}
+            <p className="mt-6 text-sm text-zinc-400 leading-relaxed max-w-2xl">
+              {item.description}
+            </p>
+
+            {/* DIVIDER */}
+            <div className="my-8 h-px bg-zinc-800" />
+
+            {/* DETAILS GRID */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+              <InfoBlock
+                label="Item Found At"
+                value={item.foundLocation}
+              />
+              <InfoBlock
+                label="Current Location"
+                value={item.currentLocation}
+              />
+              <InfoBlock
+                label="Date Reported"
+                value={new Date(item.dateReported).toLocaleString()}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================= INFO BLOCK ================= */
+function InfoBlock({ label, value }: { label: string; value: string | undefined }) {
+  return (
+    <div>
+      <p className="text-zinc-500 mb-1 font-medium">{label}</p>
+      <p className="text-white font-medium">{value || "N/A"}</p>
     </div>
   );
 }
