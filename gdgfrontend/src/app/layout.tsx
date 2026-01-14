@@ -3,6 +3,7 @@ import { Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientLayout from "@/app/client-layout";
 import { Jersey_10 } from "next/font/google";
+import { ThemeProvider } from "@/app/components/theme-provider";
 
 export const jersey = Jersey_10({
   subsets: ["latin"],
@@ -32,11 +33,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${poppins.variable} ${geistMono.variable} ${jersey.variable} antialiased bg-[#0F172A] text-white`}
+        className={`${poppins.variable} ${geistMono.variable} ${jersey.variable} antialiased bg-background text-foreground`}
       >
-        <ClientLayout>{children}</ClientLayout>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          <ClientLayout>{children}</ClientLayout>
+        </ThemeProvider>
       </body>
     </html>
   );

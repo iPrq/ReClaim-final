@@ -48,32 +48,25 @@ export default function GlassyNavBar({
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 border-t"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-border-custom bg-background/80 backdrop-blur-xl"
       style={{
-        fontFamily: "Poppins, system-ui, sans-serif",
-        background: "rgba(0, 0, 0, 0.7)", // Main Background: Black with opacity
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderColor: "#3A3A3C", // Border Color: Charcoal Gray
+        fontFamily: "var(--font-poppins), system-ui, sans-serif",
       }}
     >
       {/* Menu List */}
       <div className="flex items-center justify-center pb-[4px] pt-[12px] px-[12px] relative">
         {/* Sliding active background */}
         <div
-          className="absolute transition-all duration-500 ease-out"
+          className="absolute transition-all duration-500 ease-out rounded-full border border-accent-blue/30 bg-accent-blue/15 shadow-[0_0_20px_var(--accent-blue)]"
           style={{
             left: `calc(12px + ${getActiveIndex()} * (100% - 24px) / 5)`,
             width: `calc((100% - 24px) / 5)`,
             top: "12px",
             height: "48px",
-            background: "rgba(0, 123, 255, 0.15)", // Accent Color 1: Electric Blue (transparent)
-            boxShadow:
-              "0 0 20px rgba(0, 123, 255, 0.4), inset 0 0 20px rgba(0, 123, 255, 0.1)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
-            border: "1px solid rgba(0, 123, 255, 0.3)",
-            borderRadius: "100px",
+            // Opacity for shadow hack if needed, but var(--accent-blue) is solid. 
+            // Let's use opacity in color-mix if supported or just the variable.
+            // Simplified shadow for theme compatibility:
+            boxShadow: "0 0 20px color-mix(in srgb, var(--accent-blue), transparent 60%)",
             pointerEvents: "none",
           }}
         />
@@ -96,12 +89,12 @@ export default function GlassyNavBar({
                     size={24}
                     strokeWidth={2}
                     // Active: Electric Blue (#007BFF), Secondary Text: Light Gray (#B0B0B0)
-                    stroke={isActive ? "#007BFF" : "#B0B0B0"}
+                    stroke={isActive ? "var(--accent-blue)" : "var(--text-secondary)"}
                     fill="none"
                     className="transition-all duration-300"
                     style={{
                       filter: isActive
-                        ? "drop-shadow(0 0 4px rgba(0, 123, 255, 0.6))"
+                        ? "drop-shadow(0 0 4px color-mix(in srgb, var(--accent-blue), transparent 40%))"
                         : "none",
                     }}
                   />

@@ -6,15 +6,6 @@ import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { AnimatePresence, motion } from "framer-motion";
 import { Image, Zap, ZapOff, X } from "lucide-react";
 
-const THEME = {
-  bg: "#000000",
-  textPrimary: "#FFFFFF",
-  textSecondary: "#9CA3AF",
-  yellow: "#FFD60A",
-  buttonBg: "#1C1C1E",
-  border: "#27272A",
-};
-
 interface Result {
   match: boolean;
   item: string;
@@ -232,10 +223,10 @@ export default function Page() {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-black text-white overflow-x-hidden flex flex-col">
+    <div className="relative min-h-screen w-full bg-background text-foreground overflow-x-hidden flex flex-col">
       {/* HEADER */}
       {!openConfirm && !result && (
-        <div className="w-full pt-10 pb-4 text-center z-20 bg-black sticky top-0">
+        <div className="w-full pt-10 pb-4 text-center z-20 bg-background sticky top-0">
           <h1 className="text-xl font-semibold tracking-wide">
             Report a Lost Item
           </h1>
@@ -247,9 +238,9 @@ export default function Page() {
         <div className="flex-1 flex flex-col relative w-full">
           {/* CAMERA INSTRUCTIONS */}
           <div className="w-full px-6 mb-4 z-20 relative">
-            <div className="mx-auto max-w-md rounded-xl bg-black/60 backdrop-blur border border-zinc-800 px-4 py-3">
-              <p className="text-sm font-medium text-white">A quick tip</p>
-              <p className="text-sm text-zinc-400 mt-1 leading-relaxed">
+            <div className="mx-auto max-w-md rounded-xl bg-black/60 backdrop-blur border border-border-custom px-4 py-3">
+              <p className="text-sm font-medium text-foreground">A quick tip</p>
+              <p className="text-sm text-secondary-text mt-1 leading-relaxed">
                 Clear photos lead to better matches
               </p>
             </div>
@@ -261,7 +252,7 @@ export default function Page() {
           {/* HTML5 VIDEO ELEMENT */}
           <div className="relative w-full z-10 flex-1 flex flex-col justify-center items-center">
             <div
-              className="relative overflow-hidden shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)] bg-zinc-900 rounded-3xl"
+              className="relative overflow-hidden shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)] bg-card-bg rounded-3xl"
               style={{
                 width: "100%",
                 maxWidth: "600px",  // Increased max width
@@ -283,36 +274,32 @@ export default function Page() {
               {/* LOADING SPINNER (Visible when video not ready) */}
               {!videoReady && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-zinc-700 border-t-yellow-400 rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-2 border-zinc-700 border-t-accent-yellow rounded-full animate-spin" />
                 </div>
               )}
             </div>
           </div>
 
           {/* CAMERA CONTROLS */}
-          <div className="w-full py-8 flex justify-center items-center gap-12 z-20 bg-black mt-auto sticky bottom-0">
+          <div className="w-full py-8 flex justify-center items-center gap-12 z-20 bg-background mt-auto sticky bottom-0">
             <button
               onClick={uploadFromGallery}
-              className="w-12 h-12 rounded-full flex items-center justify-center bg-zinc-900 border border-zinc-800"
+              className="w-12 h-12 rounded-full flex items-center justify-center bg-btn-bg border border-border-custom"
             >
               <Image size={20} />
             </button>
 
             <button
               onClick={capturePhoto}
-              className="w-20 h-20 rounded-full border-4"
-              style={{
-                backgroundColor: "#fff",
-                borderColor: THEME.yellow,
-              }}
+              className="w-20 h-20 rounded-full border-4 border-accent-yellow bg-white"
             />
 
             <button
               onClick={toggleFlash}
               className={`w-12 h-12 rounded-full flex items-center justify-center border transition ${
                 flashOn
-                  ? "bg-yellow-400/20 border-yellow-400 text-yellow-400 shadow-[0_0_12px_rgba(253,224,71,0.6)]"
-                  : "bg-zinc-900 border-zinc-800 text-zinc-400"
+                  ? "bg-accent-yellow/20 border-accent-yellow text-accent-yellow shadow-[0_0_12px_rgba(253,224,71,0.6)]"
+                  : "bg-btn-bg border-border-custom text-secondary-text"
               }`}
             >
               {flashOn ? <Zap size={20} /> : <ZapOff size={20} />}
@@ -325,7 +312,7 @@ export default function Page() {
       <AnimatePresence>
         {openConfirm && imageBase64 && (
           <motion.div
-            className="fixed inset-0 z-[60] flex flex-col bg-black"
+            className="fixed inset-0 z-[60] flex flex-col bg-background"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -352,7 +339,7 @@ export default function Page() {
               <h2 className="text-2xl font-semibold">
                 Continue with this photo?
               </h2>
-              <p className="text-sm text-zinc-400 mt-2">
+              <p className="text-sm text-secondary-text mt-2">
                 Make sure the item is clearly visible.
               </p>
 
@@ -363,7 +350,7 @@ export default function Page() {
                     setImageBase64(null);
                     startCamera();
                   }}
-                  className="flex-1 py-3 rounded-lg border border-zinc-700 text-zinc-300"
+                  className="flex-1 py-3 rounded-lg border border-border-custom text-secondary-text hover:text-foreground"
                 >
                   Retake
                 </button>
@@ -371,7 +358,7 @@ export default function Page() {
                 <button
                   onClick={handleFormSubmission}
                   disabled={loading}
-                  className="flex-1 py-3 rounded-lg bg-yellow-400 text-black font-semibold disabled:opacity-70"
+                  className="flex-1 py-3 rounded-lg bg-accent-yellow text-black font-semibold disabled:opacity-70"
                 >
                   {loading ? "Analyzing..." : "Run AI Analysis"}
                 </button>
@@ -385,15 +372,15 @@ export default function Page() {
       <AnimatePresence>
         {result && (
           <motion.div
-            className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black px-6"
+            className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-background px-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 text-foreground">
               {result.match ? "Match found" : "No match yet"}
             </h2>
 
-            <p className="text-zinc-400 text-center mb-6">
+            <p className="text-secondary-text text-center mb-6">
               {result.match
                 ? `We found a likely match for "${result.item}".`
                 : `We couldn’t find a match for "${result.item}" yet.`}
@@ -401,7 +388,7 @@ export default function Page() {
 
             <button
               onClick={closeResult}
-              className="w-full max-w-sm py-4 rounded-lg bg-zinc-800 hover:bg-zinc-700"
+              className="w-full max-w-sm py-4 rounded-lg bg-btn-bg hover:bg-btn-hover border border-border-custom"
             >
               Close
             </button>

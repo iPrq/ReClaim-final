@@ -40,7 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# allow firebase config file
 !lib/firebase.ts
 
 src/app/lib/firebase.ts
