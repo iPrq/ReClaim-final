@@ -97,9 +97,10 @@ export default function FoundPage() {
 
     const formData = new FormData();
     formData.append("item_name", itemName);
-    //formData.append("description", itemDescription);
-    //formData.append("found_location", foundLocation);
-    //formData.append("pickup_location", submitLocation);
+
+    // formData.append("description", itemDescription);
+    // formData.append("found_location", foundLocation);
+    // formData.append("pickup_location", submitLocation);
 
     validBase64Strings.forEach((base64, index) => {
       const file = base64ToFile(base64, `item-${index}.jpg`);
@@ -521,6 +522,17 @@ export default function FoundPage() {
 
           {/* DROP LOCATION */}
           <div className="space-y-2">
+            <h3 className="text-lg font-semibold">
+              Drop Locations
+            </h3>
+            <p
+              className="text-sm"
+              style={{ color: THEME.textSecondary }}
+            >
+              Please submit the item to one of these verified locations
+            </p>
+
+            <div className="pt-2 flex flex-col gap-2">
             {DROP_LOCATIONS.map((loc) => (
               <label
                 key={loc}
@@ -546,6 +558,7 @@ export default function FoundPage() {
                 <span>{loc}</span>
               </label>
             ))}
+            </div>
           </div>
 
           {/* REPORT BUTTON */}

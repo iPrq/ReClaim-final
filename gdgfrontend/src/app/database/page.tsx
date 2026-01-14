@@ -1,16 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 /* ================= TYPES ================= */
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 export interface ReportedItem {
-  id: string | number;
+  id: string;
   name: string;
   description: string;
-  foundLocation: string;
-  currentLocation: string;
+  foundLocation?: string;
+  currentLocation?: string;
   dateReported: string;
   images: string[];
+  type: "lost" | "found";
 }
 
 interface ApiItem {
@@ -22,8 +27,6 @@ interface ItemsApiResponse {
   items?: ApiItem[];
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-
 /* ================= THEME ================= */
 const THEME = {
   bg: "#000000",
@@ -34,72 +37,51 @@ const THEME = {
   border: "#27272A",
 };
 
-/* ================= MOCK DATA ================= */
-const MOCK_ITEMS: ReportedItem[] = [
-  {
-    id: 1,
-    name: "Black Backpack",
-    description:
-      "Medium-sized black backpack with laptop sleeve and front zipper pocket. No visible brand logo.",
-    foundLocation: "Main Library Entrance",
-    currentLocation: "Security Office – Room 104",
-    dateReported: "2026-01-10T14:30:00",
-    images: [
-      "https://images.unsplash.com/photo-1622560480654-d96214fdc887?w=800",
-      "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800",
-      "https://images.unsplash.com/photo-1616628182506-8c2f7e5f6f19?w=800",
-    ],
-  },
-  {
-    id: 2,
-    name: "Silver Wrist Watch",
-    description:
-      "Analog silver wrist watch with black dial. Slight scratch on the clasp.",
-    foundLocation: "Cafeteria Table 7",
-    currentLocation: "Lost & Found Counter",
-    dateReported: "2026-01-11T09:15:00",
-    images: [
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
-      "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=800",
-    ],
-  },
-];
+
 
 /* ================= MAIN COMPONENT ================= */
 export default function LostAndFound() {
-  const [items, setItems] = useState<ReportedItem[]>(MOCK_ITEMS);
+  const [items, setItems] = useState<ReportedItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("name");
   const [activeItem, setActiveItem] = useState<ReportedItem | null>(null);
 
-  /* -------- FETCH DATA (Backend integration in comments) -------- */
+  /* -------- FETCH DATA (Backend integration) -------- */
   useEffect(() => {
-    /*
     const fetchData = async () => {
+      setLoading(true);
       try {
         const res = await fetch(`${BACKEND_URL}/items-list`);
+        if (!res.ok) throw new Error("Failed to fetch");
+
         const data: ItemsApiResponse = await res.json();
 
         // Transform API data to match ReportedItem interface
-        const transformed: ReportedItem[] = (data.items ?? []).map((item, index) => ({
-          id: item.name ?? `item-${index}`,
-          name: item.name ?? "Unknown Item",
-          description: "No description yet",
-          foundLocation: "RV University",
-          currentLocation: "College Front Desk",
-          dateReported: new Date().toISOString(),
-          images: [
-            item.thumbnail ?? "https://via.placeholder.com/400x300?text=No+Image"
-          ]
-        }));
+        const transformed: ReportedItem[] = (data.items ?? []).map(
+          (item, index) => ({
+            id: item.name ?? `item-${index}`,
+            name: item.name ?? "Unknown Item",
+            description: "No description available",
+            foundLocation: "Unknown Location",
+            currentLocation: "RV University",
+            images: [
+              item.thumbnail ??
+                "https://via.placeholder.com/400x300?text=No+Image",
+            ],
+            dateReported: new Date().toISOString(),
+            type: "found",
+          })
+        );
         
         setItems(transformed);
       } catch (e) {
         console.error("Backend fetch failed", e);
-        // Fallback to mock data is already initial state
+        setItems([]); 
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
-    */
   }, []);
 
   const sortedItems = [...items].sort((a, b) => {
@@ -109,9 +91,25 @@ export default function LostAndFound() {
 
   return (
     <div
-      className="min-h-screen px-4 py-10"
+      className="min-h-screen px-4 py-10 relative"
       style={{ backgroundColor: THEME.bg, color: THEME.textPrimary }}
     >
+      <AnimatePresence>
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm"
+          >
+            <Loader2 className="animate-spin mb-4" size={48} style={{ color: THEME.yellow }} />
+            <p className="text-sm font-medium tracking-wide">
+              Fetching Database...
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-6xl mx-auto">
         {/* HEADER */}
         <h1 className="text-3xl font-semibold">
