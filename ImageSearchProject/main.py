@@ -1,6 +1,5 @@
 import os
 import io
-from datetime import timedelta
 from typing import List, Dict
 
 import torch
@@ -20,7 +19,6 @@ from fastapi.middleware.cors import CORSMiddleware
 # Google Cloud
 from google.cloud import storage
 from google.auth import default
-from google.auth.transport import requests
 
 # CLIP
 from transformers import CLIPProcessor, CLIPModel
@@ -58,32 +56,62 @@ clip_model: CLIPModel | None = None
 clip_processor: CLIPProcessor | None = None
 
 # =============================
-# EMBEDDING CACHE
+# CACHES (🔥 FAST)
 # =============================
 embedding_cache: Dict[str, List[torch.Tensor]] = {}
+folder_images_cache: Dict[str, List[str]] = {}
 
 # =============================
-# LOAD CLIP ON STARTUP
+# LOAD CLIP + CACHE ON STARTUP
 # =============================
 @app.on_event("startup")
-def load_clip_on_startup():
+def startup():
     global clip_model, clip_processor
 
-    if clip_model is None:
-        clip_model = CLIPModel.from_pretrained(
-            "openai/clip-vit-base-patch32"
-        ).to(device)
+    # ---- Load CLIP ----
+    clip_model = CLIPModel.from_pretrained(
+        "openai/clip-vit-base-patch32"
+    ).to(device)
 
-        clip_processor = CLIPProcessor.from_pretrained(
-            "openai/clip-vit-base-patch32",
-            use_fast=True
+    clip_processor = CLIPProcessor.from_pretrained(
+        "openai/clip-vit-base-patch32",
+        use_fast=True
+    )
+
+    clip_model.eval()
+    print("✅ CLIP loaded")
+
+    # ---- Preload GCS data ----
+    print("⏳ Preloading embeddings + images from GCS...")
+
+    blobs = storage_client.list_blobs(BUCKET_NAME)
+
+    for blob in blobs:
+        parts = blob.name.split("/")
+        if len(parts) < 2:
+            continue
+
+        folder, filename = parts[0], parts[1]
+
+        # Cache images
+        if not filename.endswith(".pt"):
+            folder_images_cache.setdefault(folder, []).append(filename)
+            continue
+
+        # Cache embeddings
+        vec = torch.load(
+            io.BytesIO(blob.download_as_bytes()),
+            map_location="cpu"
         )
+        embedding_cache.setdefault(folder, []).append(vec)
 
-        clip_model.eval()
-        print("✅ CLIP loaded")
+    print(
+        f"✅ Loaded {len(embedding_cache)} items | "
+        f"{sum(len(v) for v in folder_images_cache.values())} images"
+    )
 
 # =============================
-# BATCH EMBEDDINGS
+# EMBEDDING UTILS
 # =============================
 def get_embeddings(image_bytes_list: List[bytes]) -> torch.Tensor:
     images = []
@@ -105,7 +133,7 @@ def get_embeddings(image_bytes_list: List[bytes]) -> torch.Tensor:
     return feats.cpu()
 
 # =============================
-# BACKGROUND TASK (🔥)
+# BACKGROUND TASK
 # =============================
 def generate_and_upload_embeddings(
     item_name: str,
@@ -131,7 +159,7 @@ def generate_and_upload_embeddings(
         print(f"✅ Embeddings done for {item_name}")
 
     except Exception as e:
-        print(f"❌ Embedding bg task failed: {e}")
+        print(f"❌ BG embedding failed: {e}")
 
 # =============================
 # HEALTH
@@ -141,7 +169,44 @@ async def root():
     return {"status": "online"}
 
 # =============================
-# REPORT FOUND (FAST RESPONSE)
+# ITEM LIST (⚡ INSTANT)
+# =============================
+@app.get("/items")
+async def list_items():
+    return {
+        "items": list(folder_images_cache.keys())
+    }
+
+# =============================
+# GET ITEM IMAGES (⚡ INSTANT)
+# =============================
+from datetime import timedelta
+
+@app.get("/items/{item_name}/images")
+async def get_item_images(item_name: str):
+    if item_name not in folder_images_cache:
+        raise HTTPException(404, "Item not found")
+
+    urls = []
+
+    for filename in folder_images_cache[item_name]:
+        blob = bucket.blob(f"{item_name}/{filename}")
+
+        url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(minutes=30),
+            method="GET",
+            service_account_email=gcp_credentials.service_account_email,
+        )
+
+
+        urls.append(url)
+
+    return {"images": urls}
+
+
+# =============================
+# REPORT FOUND (UNCHANGED)
 # =============================
 @app.post("/found")
 async def report_found(
@@ -161,7 +226,6 @@ async def report_found(
             image_bytes.append(content)
             filenames.append(file.filename)
 
-            # 🚀 Upload images first
             bucket.blob(
                 f"{item_name}/{file.filename}"
             ).upload_from_string(
@@ -169,7 +233,8 @@ async def report_found(
                 content_type=file.content_type
             )
 
-        # 🔥 Run embeddings AFTER response
+            folder_images_cache.setdefault(item_name, []).append(file.filename)
+
         background_tasks.add_task(
             generate_and_upload_embeddings,
             item_name,
@@ -179,31 +244,20 @@ async def report_found(
 
         return {
             "status": "success",
-            "message": f"{item_name} images uploaded. Processing embeddings..."
+            "message": f"{item_name} uploaded. Processing embeddings..."
         }
 
     except Exception as e:
         raise HTTPException(500, str(e))
 
 # =============================
-# SEARCH
+# SEARCH (⚡ NO GCS CALLS)
 # =============================
 @app.post("/search")
 async def search_item(file: UploadFile = File(...)):
     try:
         query_bytes = await file.read()
         query_vec = get_embeddings([query_bytes])
-
-        if not embedding_cache:
-            blobs = storage_client.list_blobs(BUCKET_NAME)
-            for blob in blobs:
-                if blob.name.endswith(".pt"):
-                    folder = blob.name.split("/")[0]
-                    vec = torch.load(
-                        io.BytesIO(blob.download_as_bytes()),
-                        map_location="cpu"
-                    )
-                    embedding_cache.setdefault(folder, []).append(vec)
 
         best_score = -1.0
         best_item = None

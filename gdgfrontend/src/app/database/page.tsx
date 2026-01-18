@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
-/* ================= TYPES ================= */
+/* ================= CONFIG ================= */
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
+/* ================= TYPES ================= */
 export interface ReportedItem {
   id: string;
   name: string;
@@ -18,29 +19,25 @@ export interface ReportedItem {
   type: "lost" | "found";
 }
 
-interface ApiItem {
-  name?: string;
-  thumbnail?: string;
-}
-
 interface ItemsApiResponse {
-  items?: ApiItem[];
+  items: string[];
 }
 
 /* ================= MAIN COMPONENT ================= */
 export default function LostAndFound() {
   const [items, setItems] = useState<ReportedItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState("name");
+  const [sortBy, setSortBy] = useState<"name" | "date">("name");
   const [activeItem, setActiveItem] = useState<ReportedItem | null>(null);
 
-  /* -------- FETCH DATA (Backend integration) -------- */
+  /* -------- FETCH DATA -------- */
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+
       try {
-        const res = await fetch(`${BACKEND_URL}/items-list`);
-        if (!res.ok) throw new Error("Failed to fetch");
+        const res = await fetch(`${BACKEND_URL}/items`);
+        if (!res.ok) throw new Error("Failed to fetch items");
 
         const data: ItemsApiResponse = await res.json();
 
@@ -68,19 +65,25 @@ export default function LostAndFound() {
         );
         
         setItems(transformed);
-      } catch (e) {
-        console.error("Backend fetch failed", e);
-        setItems([]); 
+      } catch (err) {
+        console.error("Fetch failed:", err);
+        setItems([]);
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
+  /* -------- SORT -------- */
   const sortedItems = [...items].sort((a, b) => {
-    if (sortBy === "name") return a.name.localeCompare(b.name);
-    return new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime();
+    if (sortBy === "name") {
+      return a.name.localeCompare(b.name);
+    }
+    return (
+      new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime()
+    );
   });
 
   return (
@@ -110,8 +113,8 @@ export default function LostAndFound() {
           Helping lost belongings find their way back safely 
         </p>
 
-        {/* SORT CONTROLS */}
-        <div className="mt-6 flex gap-3">
+        {/* SORT */}
+        <div className="mt-6">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -136,17 +139,20 @@ export default function LostAndFound() {
 
       {/* MODAL */}
       {activeItem && (
-        <ItemModal
-          item={activeItem}
-          onClose={() => setActiveItem(null)}
-        />
+        <ItemModal item={activeItem} onClose={() => setActiveItem(null)} />
       )}
     </div>
   );
 }
 
 /* ================= ITEM CARD ================= */
-function ItemCard({ item, onClick }: { item: ReportedItem; onClick: () => void }) {
+function ItemCard({
+  item,
+  onClick,
+}: {
+  item: ReportedItem;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
@@ -156,10 +162,6 @@ function ItemCard({ item, onClick }: { item: ReportedItem; onClick: () => void }
         src={item.images[0]}
         alt={item.name}
         className="h-40 w-full object-cover"
-        onError={(e) => {
-          e.currentTarget.src =
-            "https://via.placeholder.com/400x300?text=No+Image";
-        }}
       />
 
       <div className="p-4">
@@ -179,7 +181,13 @@ function ItemCard({ item, onClick }: { item: ReportedItem; onClick: () => void }
 }
 
 /* ================= MODAL ================= */
-function ItemModal({ item, onClose }: { item: ReportedItem; onClose: () => void }) {
+function ItemModal({
+  item,
+  onClose,
+}: {
+  item: ReportedItem;
+  onClose: () => void;
+}) {
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
       <div className="relative w-full max-w-4xl mx-4">
@@ -202,9 +210,7 @@ function ItemModal({ item, onClose }: { item: ReportedItem; onClose: () => void 
             ))}
           </div>
 
-          {/* CONTENT */}
           <div className="p-8">
-            {/* HEADER */}
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-2xl font-semibold text-foreground">
@@ -232,12 +238,8 @@ function ItemModal({ item, onClose }: { item: ReportedItem; onClose: () => void 
             {/* DIVIDER */}
             <div className="my-8 h-px bg-border-custom" />
 
-            {/* DETAILS GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
-              <InfoBlock
-                label="Item Found At"
-                value={item.foundLocation}
-              />
+              <InfoBlock label="Item Found At" value={item.foundLocation} />
               <InfoBlock
                 label="Current Location"
                 value={item.currentLocation}
@@ -255,7 +257,7 @@ function ItemModal({ item, onClose }: { item: ReportedItem; onClose: () => void 
 }
 
 /* ================= INFO BLOCK ================= */
-function InfoBlock({ label, value }: { label: string; value: string | undefined }) {
+function InfoBlock({ label, value }: { label: string; value?: string }) {
   return (
     <div>
       <p className="text-secondary-text mb-1 font-medium">{label}</p>
