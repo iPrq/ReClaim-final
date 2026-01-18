@@ -17,7 +17,7 @@ import {
 import NextImage from "next/image";
 
 /* ================= CONFIG ================= */
-const API = "https://campus-search-api-680513043824.us-central1.run.app";
+const API = process.env.NEXT_PUBLIC_BACKEND_URL!;
 
 /* ================= TYPES ================= */
 interface Result {
