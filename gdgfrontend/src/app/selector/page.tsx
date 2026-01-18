@@ -1,44 +1,13 @@
 "use client";
 
-import React from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-
-const THEME = {
-  bg: "#000000",
-  textPrimary: "#FFFFFF",
-  textSecondary: "#B0B0B0",
-  blue: "#007BFF",
-  red: "#FF3B30",
-  yellow: "#FFD60A",
-  buttonBg: "#1C1C1E",
-  buttonHover: "#2C2C2E",
-  border: "#3A3A3C",
-};
 
 export default function OptionsPage() {
   const router = useRouter();
 
   return (
-    <div
-      className="relative min-h-screen w-full overflow-hidden px-4 py-12"
-      style={{ backgroundColor: THEME.bg }}
-    >
-      {/* ================= BACKGROUND GLOW ================= */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <motion.div
-          animate={{ scale: [1, 1.15, 1] }}
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-1/2 -left-1/2 w-[120vw] h-[120vw] rounded-full blur-[120px]"
-          style={{ backgroundColor: THEME.blue, opacity: 0.07 }}
-        />
-        <motion.div
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-0 right-0 w-[100vw] h-[100vw] rounded-full blur-[120px]"
-          style={{ backgroundColor: THEME.red, opacity: 0.07 }}
-        />
-      </div>
+    <div className="relative min-h-screen w-full overflow-hidden px-4 py-12 bg-background transition-colors duration-300">
 
       <div className="relative z-10 w-full max-w-md mx-auto flex flex-col gap-10">
 
@@ -49,55 +18,42 @@ export default function OptionsPage() {
           transition={{ duration: 0.6 }}
           className="text-left"
         >
-          <h1
-            className="text-5xl font-bold leading-tight"
-            style={{ color: THEME.textPrimary }}
-          >
+          <h1 className="text-4xl font-bold leading-tight text-foreground">
             What brings you here?
           </h1>
 
-          {/* Bumbly text */}
+         {/* Title Text */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="mt-3 text-base"
-            style={{ color: THEME.textSecondary }}
+            className="mt-2 text-sm text-secondary-text"
           >
             Lost something important… or did you just help someone find theirs?
           </motion.p>
 
           {/* Campus line */}
-          <p
-            className="mt-4 text-sm flex items-center gap-2"
-            style={{ color: THEME.textSecondary }}
-          >
+          <p className="mt-3 text-xs flex items-center gap-2 text-secondary-text">
             📍 RV University · Main Campus
-            <span
-              className="px-2 py-[2px] rounded-full text-xs border"
-              style={{
-                color: THEME.yellow,
-                borderColor: THEME.border,
-              }}
-            >
+            <span className="px-2 py-[2px] rounded-full text-[10px] border border-border-custom text-accent-yellow">
               Verified
             </span>
           </p>
         </motion.div>
 
         {/* ================= ACTION CARDS ================= */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <SelectionCard
             title="Lost Something?"
             image="/images/Lostpersonimage.png"
-            accent={THEME.red}
+            accent="var(--accent-yellow)"
             onClick={() => router.push("/lost")}
           />
 
           <SelectionCard
             title="Found Something?"
             image="/images/Founditemperson.png"
-            accent={THEME.blue}
+            accent="var(--accent-purple)"
             onClick={() => router.push("/found")}
           />
         </div>
@@ -124,25 +80,30 @@ function SelectionCard({
       whileHover={{ scale: 1.03, y: -4 }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="cursor-pointer rounded-3xl overflow-hidden"
+      className="cursor-pointer rounded-2xl overflow-hidden border-2 shadow-lg relative bg-card-bg"
       style={{
-        backgroundColor: accent,
-        border: `1px solid ${THEME.border}`,
+        borderColor: accent,
       }}
     >
-      <div className="relative p-6 flex flex-col items-center gap-5">
+      {/* Subtle tint overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.08] pointer-events-none"
+        style={{ backgroundColor: accent }}
+      />
+
+      <div className="relative p-5 flex flex-col items-center gap-3 z-10">
         {/* Image */}
         <motion.img
           src={image}
           alt={title}
-          className="h-44 object-contain"
+          className="h-32 object-contain drop-shadow-lg"
           animate={{ y: [0, -6, 0] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         />
 
         {/* Title */}
-        <div className="w-full text-center py-2">
-          <p className="text-3xl font-bold text-white">
+        <div className="w-full text-center py-1">
+          <p className="text-2xl font-bold text-foreground drop-shadow-md">
             {title}
           </p>
         </div>

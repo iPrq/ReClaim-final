@@ -18,20 +18,6 @@ import {
   Loader2,
 } from "lucide-react";
 
-/* ================= THEME ================= */
-
-const THEME = {
-  bg: "#000000",
-  textPrimary: "#FFFFFF",
-  textSecondary: "#B0B0B0",
-  blue: "#007BFF",
-  red: "#FF3B30",
-  yellow: "#FFD60A",
-  buttonBg: "#1C1C1E",
-  buttonHover: "#2C2C2E",
-  border: "#3A3A3C",
-};
-
 /* ================= CONSTANTS ================= */
 
 const DROP_LOCATIONS = [
@@ -293,10 +279,7 @@ export default function FoundPage() {
   /* ================= UI ================= */
 
   return (
-    <div
-      className="min-h-screen relative"
-      style={{ backgroundColor: THEME.bg, color: THEME.textPrimary }}
-    >
+    <div className="min-h-screen relative bg-background text-foreground">
         {/* Hidden Canvas */}
         <canvas ref={canvasRef} className="hidden" />
 
@@ -351,10 +334,9 @@ export default function FoundPage() {
                   {Array.from({ length: 6 }).map((_, i) => (
                     <span
                       key={i}
-                      className="w-2.5 h-2.5 rounded-full transition-colors"
-                      style={{
-                        backgroundColor: i < currentShot ? THEME.blue : 'rgba(255,255,255,0.1)',
-                      }}
+                      className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                        i < currentShot ? "bg-accent-blue" : "bg-white/10"
+                      }`}
                     />
                   ))}
                 </div>
@@ -388,13 +370,13 @@ export default function FoundPage() {
       {!isCameraOpen && (
         <div className="px-4 pt-8 pb-28 space-y-8">
           <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Package color={THEME.blue} />
+            <Package className="text-accent-blue" />
             Report Found Item
           </h1>
 
           {/* PHOTO GRID */}
           <div>
-            <p className="text-sm mb-3" style={{ color: THEME.textSecondary }}>
+            <p className="text-sm mb-3 text-secondary-text">
               {photosAdded} of 6 photos added
             </p>
 
@@ -403,11 +385,7 @@ export default function FoundPage() {
                 <button
                   key={i}
                   onClick={openCamera}
-                  className="aspect-square rounded-xl overflow-hidden relative flex items-center justify-center"
-                  style={{
-                    backgroundColor: THEME.buttonBg,
-                    border: `1px solid ${THEME.border}`,
-                  }}
+                  className="aspect-square rounded-xl overflow-hidden relative flex items-center justify-center bg-btn-bg border border-border-custom"
                 >
                   {img ? (
                     <>
@@ -415,18 +393,12 @@ export default function FoundPage() {
                         src={img}
                         className="object-cover w-full h-full"
                       />
-                      <div
-                        className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold"
-                        style={{ backgroundColor: THEME.blue }}
-                      >
+                      <div className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold bg-accent-blue text-white">
                         ✓
                       </div>
                     </>
                   ) : (
-                    <span
-                      className="text-2xl"
-                      style={{ color: THEME.textSecondary }}
-                    >
+                    <span className="text-2xl text-secondary-text">
                       +
                     </span>
                   )}
@@ -440,25 +412,16 @@ export default function FoundPage() {
             <h3 className="text-lg font-semibold">
               What did you find?
             </h3>
-            <p
-              className="text-sm"
-              style={{ color: THEME.textSecondary }}
-            >
+            <p className="text-sm text-secondary-text">
               Help us identify the item clearly
             </p>
 
-            <div
-              className="rounded-2xl px-4 py-3"
-              style={{
-                backgroundColor: THEME.buttonBg,
-                border: `1px solid ${THEME.border}`,
-              }}
-            >
+            <div className="rounded-2xl px-4 py-3 bg-btn-bg border border-border-custom">
               <input
                 placeholder="e.g. Black wallet, AirPods case"
                 value={itemName}
                 onChange={(e) => setItemName(e.target.value)}
-                className="w-full bg-transparent outline-none"
+                className="w-full bg-transparent outline-none text-foreground placeholder:text-secondary-text"
               />
             </div>
           </div>
@@ -468,26 +431,17 @@ export default function FoundPage() {
             <h3 className="text-lg font-semibold">
               Tell us more about it
             </h3>
-            <p
-              className="text-sm"
-              style={{ color: THEME.textSecondary }}
-            >
+            <p className="text-sm text-secondary-text">
               Any details that could help the owner
             </p>
 
-            <div
-              className="rounded-2xl px-4 py-3"
-              style={{
-                backgroundColor: THEME.buttonBg,
-                border: `1px solid ${THEME.border}`,
-              }}
-            >
+            <div className="rounded-2xl px-4 py-3 bg-btn-bg border border-border-custom">
               <textarea
                 rows={4}
                 placeholder="Color, brand, scratches, stickers"
                 value={itemDescription}
                 onChange={(e) => setItemDescription(e.target.value)}
-                className="w-full bg-transparent outline-none resize-none"
+                className="w-full bg-transparent outline-none resize-none text-foreground placeholder:text-secondary-text"
               />
             </div>
           </div>
@@ -497,25 +451,16 @@ export default function FoundPage() {
             <h3 className="text-lg font-semibold">
               Where did you find it?
             </h3>
-            <p
-              className="text-sm"
-              style={{ color: THEME.textSecondary }}
-            >
+            <p className="text-sm text-secondary-text">
               Be as specific as you can
             </p>
 
-            <div
-              className="rounded-2xl px-4 py-3"
-              style={{
-                backgroundColor: THEME.buttonBg,
-                border: `1px solid ${THEME.border}`,
-              }}
-            >
+            <div className="rounded-2xl px-4 py-3 bg-btn-bg border border-border-custom">
               <input
                 placeholder="e.g. Library 2nd floor, near stairs"
                 value={foundLocation}
                 onChange={(e) => setFoundLocation(e.target.value)}
-                className="w-full bg-transparent outline-none"
+                className="w-full bg-transparent outline-none text-foreground placeholder:text-secondary-text"
               />
             </div>
           </div>
@@ -525,39 +470,30 @@ export default function FoundPage() {
             <h3 className="text-lg font-semibold">
               Drop Locations
             </h3>
-            <p
-              className="text-sm"
-              style={{ color: THEME.textSecondary }}
-            >
+            <p className="text-sm text-secondary-text">
               Please submit the item to one of these verified locations
             </p>
 
             <div className="pt-2 flex flex-col gap-2">
-            {DROP_LOCATIONS.map((loc) => (
-              <label
-                key={loc}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer"
-                style={{
-                  backgroundColor:
+              {DROP_LOCATIONS.map((loc) => (
+                <label
+                  key={loc}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors border ${
                     submitLocation === loc
-                      ? "rgba(0,123,255,0.15)"
-                      : THEME.buttonBg,
-                  border: `1px solid ${
-                    submitLocation === loc
-                      ? THEME.blue
-                      : THEME.border
-                  }`,
-                }}
-              >
-                <input
-                  type="radio"
-                  checked={submitLocation === loc}
-                  onChange={() => setSubmitLocation(loc)}
-                />
-                <MapPin size={16} />
-                <span>{loc}</span>
-              </label>
-            ))}
+                      ? "bg-accent-blue/15 border-accent-blue"
+                      : "bg-btn-bg border-border-custom"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    checked={submitLocation === loc}
+                    onChange={() => setSubmitLocation(loc)}
+                    className="accent-accent-blue"
+                  />
+                  <MapPin size={16} />
+                  <span>{loc}</span>
+                </label>
+              ))}
             </div>
           </div>
 
@@ -572,17 +508,11 @@ export default function FoundPage() {
               !submitLocation ||
               loading
             }
-            className="w-full py-4 rounded-2xl text-lg font-semibold transition flex items-center justify-center"
-            style={{
-              backgroundColor:
-                photosAdded === 6 ? THEME.blue : THEME.buttonBg,
-              color:
-                photosAdded === 6
-                  ? THEME.textPrimary
-                  : THEME.textSecondary,
-              border: `1px solid ${THEME.border}`,
-              opacity: loading ? 0.7 : 1,
-            }}
+            className={`w-full py-4 rounded-2xl text-lg font-semibold transition flex items-center justify-center border ${
+              photosAdded === 6
+                ? "bg-accent-blue text-white border-accent-blue"
+                : "bg-btn-bg text-secondary-text border-border-custom"
+            } ${loading ? "opacity-70" : ""}`}
           >
             {loading ? "Submitting..." : "Report Item"}
           </button>

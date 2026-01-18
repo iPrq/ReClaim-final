@@ -1,18 +1,84 @@
 @import "tailwindcss";
 
 :root {
+  /* Light Theme */
+  --background: #FFFFFF;
+  --foreground: #09090B;
+  
+  --text-secondary: #71717A;
+  
+  /* Theme Base Colors (Default Blue) */
+  --primary: #007BFF;
+  --primary-rgb: 0, 123, 255;
+  
+  --accent-blue: var(--primary);
+  --accent-red: #EF4444;
+  --accent-yellow: #EAB308;
+  --accent-purple: #8b5cf6;
+  
+  --btn-bg: #F4F4F5;
+  --btn-text: #18181B;
+  --btn-hover: #E4E4E7;
+  --card-bg: #FFFFFF;
+  --border-color: #E4E4E7;
+}
+
+/* Color Themes */
+[data-theme-color="blue"] {
+  --primary: #007BFF;
+  --primary-rgb: 0, 123, 255;
+}
+
+[data-theme-color="red"] {
+  --primary: #EF4444;
+  --primary-rgb: 239, 68, 68;
+}
+
+[data-theme-color="green"] {
+  --primary: #10B981;
+  --primary-rgb: 16, 185, 129;
+}
+
+.dark {
+  /* Dark Theme */
   --background: #000000;
   --foreground: #FFFFFF;
   
-  /* Custom Palette */
   --text-secondary: #B0B0B0;
-  --accent-blue: #007BFF;
+  
+  /* In dark mode, we fallback to var(--primary) which is set by data-theme-color attribute.
+     If no attribute, it falls back to :root definition or we can redeclare here.
+     The data-theme-color selectors above have higher specificity if attached to html/body than just .dark 
+     BUT .dark is a class. 
+     [data-theme-color] is an attribute. 
+     We need to ensure dark mode specific shades if needed.
+  */ 
+  --accent-blue: var(--primary);
   --accent-red: #FF3B30;
   --accent-yellow: #FFD60A;
+  --accent-purple: #8b5cf6;
+  
   --btn-bg: #1C1C1E;
   --btn-text: #FFFFFF;
   --btn-hover: #2C2C2E;
+  --card-bg: #1C1C1E;
   --border-color: #3A3A3C;
+}
+
+/* Dark Mode Theme Overrides */
+.dark[data-theme-color="blue"] {
+  --primary: #007BFF;
+  --primary-rgb: 0, 123, 255;
+}
+
+.dark[data-theme-color="red"] {
+  --primary: #FF3B30;
+  --primary-rgb: 255, 59, 48;
+}
+
+.dark[data-theme-color="green"] {
+  --primary: #34D399;
+  --primary-rgb: 52, 211, 153;
 }
 
 @theme inline {
@@ -22,21 +88,17 @@
   --font-mono: var(--font-geist-mono);
   
   /* Expose custom colors to Tailwind */
+  --color-primary: var(--primary);
   --color-secondary-text: var(--text-secondary);
   --color-accent-blue: var(--accent-blue);
   --color-accent-red: var(--accent-red);
   --color-accent-yellow: var(--accent-yellow);
+  --color-accent-purple: var(--accent-purple);
   --color-btn-bg: var(--btn-bg);
   --color-btn-text: var(--btn-text);
   --color-btn-hover: var(--btn-hover);
+  --color-card-bg: var(--card-bg);
   --color-border-custom: var(--border-color);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #000000;
-    --foreground: #FFFFFF;
-  }
 }
 
 body {
