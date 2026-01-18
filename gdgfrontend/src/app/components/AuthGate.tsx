@@ -35,6 +35,5 @@ export default function AuthGate() {
     );
   }
 
-  // ⛔ nothing to render — routing handled above
   return null;
 }
