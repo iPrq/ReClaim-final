@@ -10,9 +10,8 @@ import { useRouter } from "next/navigation";
 const backgroundImage = "/images/loginpagebg.png";
 
 export default function LoginPage() {
-  const router = useRouter(); // ✅ REQUIRED for navigation
+  const router = useRouter();
 
-  // ✅ Initialize Google Auth ONCE
   useEffect(() => {
     GoogleAuth.initialize({
       clientId:
@@ -22,13 +21,11 @@ export default function LoginPage() {
     });
   }, []);
 
-  // ✅ Google Sign-In (Capacitor-safe)
   const handleGoogleSignIn = async () => {
     try {
       const googleUser = await GoogleAuth.signIn();
-
       if (!googleUser?.authentication?.idToken) {
-        throw new Error("No ID token returned from Google");
+        throw new Error("No ID token");
       }
 
       const credential = GoogleAuthProvider.credential(
@@ -36,23 +33,17 @@ export default function LoginPage() {
       );
 
       await signInWithCredential(auth, credential);
-
-      // ✅ IMPORTANT: Manual navigation (DO NOT rely on AuthGate)
       router.replace("/selector");
     } catch (err) {
-      console.error("Google Sign-In failed:", err);
-      alert("Google Sign-In failed. Check Logcat for details.");
+      console.error(err);
+      alert("Google Sign-In failed");
     }
   };
 
-  const handleGithubSignIn = () => {
-    router.push("/selector")
-  };
-
   return (
-    <div className="bg-[#000000] min-h-screen overflow-y-auto">
-      <div className="relative h-screen flex flex-col">
-        {/* Background Image */}
+    <div className="bg-black min-h-screen overflow-hidden">
+      <div className="relative h-screen flex flex-col animate-fadeIn">
+        {/* Background */}
         <div className="absolute inset-0 h-[70vh] top-0">
           <img
             src={backgroundImage}
@@ -63,23 +54,23 @@ export default function LoginPage() {
 
         {/* Gradient Overlay */}
         <div className="absolute inset-0 flex flex-col justify-end">
-          <div className="relative h-[50vh] bg-gradient-to-b from-transparent to-[#0F172A] to-[30%] flex flex-col justify-end pb-20 px-6">
-            <div className="text-center space-y-8">
+          <div className="relative h-[52vh] bg-gradient-to-b from-transparent via-[#0F172A]/70 to-[#0F172A] flex flex-col justify-end pb-24 px-6">
+            <div className="text-center space-y-9">
               {/* Title */}
               <div className="space-y-3">
-                <h1 className="font-[family-name:var(--font-jersey-10)] text-[56px] text-white">
+                <h1 className="text-3xl md:text-4xl text-white font-bold tracking-tight">
                   Welcome Back
                 </h1>
-                <p className="font-[family-name:var(--font-jersey-10)] text-[18px] text-[#a2a2a2] max-w-sm mx-auto">
+                <p className="text-base text-gray-400 max-w-sm mx-auto">
                   Sign in to continue helping your community
                 </p>
               </div>
 
               {/* Buttons */}
-              <div className="space-y-3 max-w-sm mx-auto">
+              <div className="space-y-4 max-w-sm mx-auto">
                 <button
                   onClick={handleGoogleSignIn}
-                  className="w-full bg-white hover:bg-gray-50 active:scale-[0.98] transition-all rounded-[16px] px-6 py-4 flex items-center justify-center gap-3 shadow-lg"
+                  className="w-full bg-white hover:bg-gray-50 active:scale-[0.97] transition-all duration-200 rounded-[18px] px-6 py-4 flex items-center justify-center gap-3 shadow-xl"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path
@@ -92,30 +83,30 @@ export default function LoginPage() {
                     />
                     <path
                       fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22z"
                     />
                     <path
                       fill="#EA4335"
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  <span className="text-gray-800 text-[20px] font-[family-name:var(--font-jersey-10)]">
+                  <span className="text-gray-800 text-base font-medium">
                     Continue with Google
                   </span>
                 </button>
 
                 <button
-                  onClick={handleGithubSignIn}
-                  className="w-full bg-[#24292e] hover:bg-[#2f363d] active:scale-[0.98] transition-all rounded-[16px] px-6 py-4 flex items-center justify-center gap-3 shadow-lg"
+                  onClick={() => router.push("/selector")}
+                  className="w-full bg-[#24292e] hover:bg-[#2f363d] active:scale-[0.97] transition-all duration-200 rounded-[18px] px-6 py-4 flex items-center justify-center gap-3 shadow-lg"
                 >
                   <Github className="w-5 h-5 text-white" />
-                  <span className="text-white text-[20px] font-[family-name:var(--font-jersey-10)]">
+                  <span className="text-white text-base font-medium">
                     Continue with GitHub
                   </span>
                 </button>
               </div>
 
-              <p className="text-[14px] text-[#6b7280] max-w-xs mx-auto font-[family-name:var(--font-jersey-10)]">
+              <p className="text-xs text-gray-500 max-w-xs mx-auto">
                 By continuing, you agree to our Terms of Service and Privacy
                 Policy
               </p>
@@ -123,6 +114,24 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Animation */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.6s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
