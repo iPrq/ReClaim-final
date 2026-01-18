@@ -1,58 +1,92 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
 import { useState } from "react";
+import Image from "next/image";
 import AuthGate from "@/app/components/AuthGate";
-
-const backgroundImage = "/images/getstartedbg.png";
 
 export default function GetStartedPage() {
   const [showAuthGate, setShowAuthGate] = useState(false);
 
-  const onGetStarted = () => {
-    setShowAuthGate(true);
-  };
-
   return (
-    <div className="bg-[#0F172A] min-h-screen overflow-y-auto">
+    <div
+      className="min-h-screen"
+      style={{ "--accent-yellow": "#FFD60A" } as React.CSSProperties}
+    >
       {showAuthGate && <AuthGate />}
 
       {!showAuthGate && (
-        <div className="relative h-screen flex flex-col">
-          {/* Background Image */}
-          <div className="absolute inset-0 h-[70vh] top-0">
-            <img
-              src={backgroundImage}
-              alt="Background"
-              className="w-full h-full object-cover"
-            />
-          </div>
+        <div className="relative h-screen w-full overflow-hidden">
+          {/* BACKGROUND IMAGE */}
+          <Image
+            src="/images/getstartedbg.jpg"
+            alt="Get Started Background"
+            fill
+            priority
+            className="object-cover"
+          />
 
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 flex flex-col justify-end">
-            <div className="relative h-[50vh] bg-gradient-to-b from-transparent to-[#0F172A] to-[30%] flex flex-col justify-end pb-32 px-6">
-              <div className="text-center space-y-6">
-                <h1 className="font-[family-name:var(--font-jersey-10)] text-[56px] text-white">
-                  Reclaim
-                </h1>
-                <p className="font-[family-name:var(--font-jersey-10)] text-[18px] text-[#a2a2a2] max-w-sm mx-auto">
-                  A community-powered platform helping you recover lost
-                  belongings
-                </p>
-              </div>
+          {/* GRADIENT OVERLAY */}
+          <div
+            className="
+              absolute inset-0
+              bg-gradient-to-t
+              from-black/90
+              via-black/60
+              to-black/10
+              backdrop-blur-[2px]
+            "
+          />
+
+          {/* CONTENT */}
+          <div className="relative z-10 flex flex-col h-full justify-end px-6 pb-32 text-center">
+            {/* Title */}
+            <div className="mb-12">
+              <h1 className="text-white text-[44px] font-semibold tracking-tight">
+                Reclaim
+              </h1>
+              <p className="mt-2 text-gray-300/80 text-sm">
+                Helping lost things return
+              </p>
             </div>
+
+            {/* Legal */}
+            <p className="text-[11px] text-gray-400/80 leading-relaxed mb-10">
+              Read our{" "}
+              <a
+                href="/privacy"
+                className="text-[var(--accent-yellow)] underline underline-offset-2"
+              >
+                Privacy Policy
+              </a>
+              . Tap “Get Started” to accept the{" "}
+              <a
+                href="/terms"
+                className="text-[var(--accent-yellow)] underline underline-offset-2"
+              >
+                Terms of Service
+              </a>
+              .
+            </p>
           </div>
 
-          {/* Button */}
-          <div className="fixed bottom-0 left-0 right-0 z-30 px-6 pb-12 pt-4 bg-[#0F172A]">
+          {/* CTA BUTTON */}
+          <div className="absolute bottom-0 left-0 right-0 z-20 px-6 pb-[max(env(safe-area-inset-bottom),2rem)]">
             <button
-              onClick={onGetStarted}
-              className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] transition-all rounded-[16px] px-6 py-5 flex items-center justify-center gap-2"
+              onClick={() => setShowAuthGate(true)}
+              className="
+                w-full
+                bg-white
+                text-black
+                text-lg
+                font-semibold
+                py-5
+                rounded-3xl
+                shadow-[0_10px_30px_rgba(0,0,0,0.25)]
+                transition
+                active:scale-[0.96]
+              "
             >
-              <span className="font-[family-name:var(--font-jersey-10)] text-[24px] text-white">
-                Get Started
-              </span>
-              <ArrowRight className="w-6 h-6 text-white" />
+              Get Started
             </button>
           </div>
         </div>
