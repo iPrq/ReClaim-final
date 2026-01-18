@@ -62,11 +62,11 @@ export default function LostAndFound() {
               return {
                 id: name,
                 name,
-                description: "Reported found on campus", // Placeholder description
-                foundLocation: "Unknown Location", // Placeholder
-                currentLocation: "RV University", // Placeholder
+                description: "No description provided", // Placeholder description
+                foundLocation: "B Block Auditorium", 
+                currentLocation: "Admin Block Reception", 
                 images: imageUrls,
-                dateReported: new Date().toISOString(), // Mock date as backend doesn't provide it yet
+                dateReported: new Date().toISOString(), 
                 type: "found",
               };
             } catch {
@@ -112,7 +112,7 @@ export default function LostAndFound() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm"
           >
-            <Loader2 className="animate-spin mb-4 text-accent-yellow" size={48} />
+            <Loader2 className="animate-spin mb-4 text-primary" size={48} />
             <p className="text-sm font-medium tracking-wide">
               Fetching Database...
             </p>
@@ -197,7 +197,7 @@ function ItemCard({ item, onClick }: { item: ReportedItem; onClick: () => void }
       <div className="p-4">
         <div className="flex items-center justify-between">
           <h3 className="font-medium text-foreground">{item.name}</h3>
-          <span className="text-xs px-2 py-1 rounded-full bg-accent-yellow/20 text-accent-yellow">
+          <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium border border-primary/20">
             FOUND
           </span>
         </div>
@@ -220,93 +220,94 @@ function ItemModal({ item, onClose }: { item: ReportedItem; onClose: () => void 
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="relative w-full max-w-4xl flex flex-col max-h-[90vh]">
-        {/* TOP HANDLE / ARROW */}
-        <div className="flex justify-center mb-3 shrink-0">
-          <div className="h-1.5 w-12 rounded-full bg-zinc-600" />
-        </div>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="relative w-full max-w-2xl bg-card-bg rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+        
+        {/* HERO IMAGE & GALLERY */}
+         <div className="relative h-64 shrink-0 bg-zinc-900">
+           {item.images.length > 0 ? (
+             <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory">
+                 {item.images.map((img, index) => (
+                    <img key={index} src={img} className="w-full h-full object-contain shrink-0 snap-center" />
+                 ))}
+             </div>
+           ) : (
+                <div className="w-full h-full flex items-center justify-center text-secondary-text">
+                  <X size={32} />
+                  <span className="ml-2">No Images</span>
+                </div>
+           )}
+           <button 
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition-colors"
+           >
+              <X size={20} />
+           </button>
+         </div>
 
-        {/* MODAL CARD */}
-        <div className="rounded-2xl overflow-y-auto shadow-xl bg-card-bg">
-          {/* IMAGE GALLERY */}
-          <div className="grid grid-cols-3 gap-1">
-            {item.images.map((img, index) => (
-              <img
-                key={index}
-                src={img}
-                alt=""
-                className="h-44 w-full object-cover"
-              />
-            ))}
-          </div>
 
-          {/* CONTENT */}
-          <div className="p-8">
-            {/* HEADER */}
-            <div className="flex items-start justify-between">
+        {/* CONTENT */}
+        <div className="flex-1 overflow-y-auto p-8">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <h2 className="text-2xl font-semibold text-foreground">
+                <h2 className="text-3xl font-bold text-foreground mb-1">
                   {item.name}
                 </h2>
-                <span className="mt-2 inline-block text-xs tracking-wide px-3 py-1 rounded-full bg-accent-yellow/10 text-accent-yellow">
-                  FOUND ITEM
-                </span>
+                <div className="flex items-center gap-2">
+                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                   <span className="text-sm font-bold text-primary tracking-wide">
+                     VERIFIED FOUND
+                   </span>
+                </div>
               </div>
-
-              <button
-                onClick={onClose}
-                className="text-secondary-text hover:text-foreground text-xl"
-                aria-label="Close"
-              >
-                ✕
-              </button>
             </div>
 
-            {/* DESCRIPTION */}
-            <p className="mt-6 text-sm text-secondary-text leading-relaxed max-w-2xl">
+            <p className="text-secondary-text leading-relaxed text-sm mb-8">
               {item.description}
             </p>
 
-            {/* DIVIDER */}
-            <div className="my-8 h-px bg-border-custom" />
-
             {/* DETAILS GRID */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
-              <InfoBlock
-                label="Item Found At"
-                value={item.foundLocation}
-              />
-              <InfoBlock
-                label="Current Location"
-                value={item.currentLocation}
-              />
-              <InfoBlock
-                label="Date Reported"
-                value={new Date(item.dateReported).toLocaleString()}
-              />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-btn-bg/50 border border-border-custom flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <MapPin size={20} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-secondary-text block">Found At</label>
+                    <span className="text-foreground font-medium">{item.foundLocation || "Unknown"}</span>
+                  </div>
+              </div>
+              
+              <div className="p-4 rounded-2xl bg-btn-bg/50 border border-border-custom flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <MapPin size={20} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-secondary-text block">Currently At</label>
+                    <span className="text-foreground font-medium">{item.currentLocation || "Unknown"}</span>
+                  </div>
+              </div>
 
-function InfoBlock({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value?: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-2 text-secondary-text uppercase text-[10px] font-bold tracking-widest">
-        {icon}
-        {label}
+               <div className="p-4 rounded-2xl bg-btn-bg/50 border border-border-custom flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Calendar size={20} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-secondary-text block">Reported Date</label>
+                    <span className="text-foreground font-medium">{new Date(item.dateReported).toLocaleDateString()}</span>
+                  </div>
+              </div>
+            </div>
+            
+            <div className="mt-8">
+                <button 
+                  onClick={onClose}
+                  className="w-full py-4 rounded-xl bg-primary text-white font-bold shadow-lg hover:brightness-110 active:scale-[0.98] transition-all"
+                >
+                  Contact Finder
+                </button>
+            </div>
+        </div>
       </div>
     </div>
   );

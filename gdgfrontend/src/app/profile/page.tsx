@@ -82,7 +82,7 @@ export default function ProfileApp() {
                 <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
               </header>
 
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-900 p-6 shadow-2xl">
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary/60 p-6 shadow-2xl">
                 <div className="relative z-10">
                   <ProfileHeader
                     light
@@ -93,7 +93,7 @@ export default function ProfileApp() {
                 </div>
                 {/* Decorative circle */}
                 <div className="absolute top-0 right-0 -mr-8 -mt-8 h-32 w-32 rounded-full bg-white opacity-10 blur-2xl" />
-                <div className="absolute bottom-0 left-0 -ml-8 -mb-8 h-32 w-32 rounded-full bg-blue-400 opacity-20 blur-2xl" />
+                <div className="absolute bottom-0 left-0 -ml-8 -mb-8 h-32 w-32 rounded-full bg-primary/40 opacity-20 blur-2xl" />
               </div>
 
               <div className="space-y-3">
@@ -260,7 +260,7 @@ export default function ProfileApp() {
 
                 {screen === "about" && (
                   <div className="text-center space-y-6 pt-10">
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20">
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/20">
                       <School size={40} className="text-white" />
                     </div>
                     <div>

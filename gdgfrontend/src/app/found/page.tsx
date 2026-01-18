@@ -234,11 +234,11 @@ export default function FoundPage() {
       <canvas ref={canvasRef} className="hidden" />
 
       {isCameraOpen && (
-        <div className="fixed inset-0 z-[60] flex flex-col bg-black pt-16">
+        <div className="fixed inset-0 z-[60] flex flex-col bg-background pt-16">
           <div className="absolute top-0 left-0 right-0 px-4 pt-4 flex justify-between items-center z-20">
             <button
               onClick={() => setIsCameraOpen(false)}
-              className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full border border-white/10"
+              className="p-2 bg-card-bg/80 backdrop-blur-md rounded-full border border-border-custom text-foreground shadow-sm"
             >
               <X size={26} />
             </button>
@@ -257,7 +257,7 @@ export default function FoundPage() {
                   console.error(e);
                 }
               }}
-              className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full border border-white/10"
+              className="p-2 bg-card-bg/80 backdrop-blur-md rounded-full border border-border-custom text-foreground shadow-sm"
             >
               {flashOn ? (
                 <Zap size={22} className="text-yellow-400 fill-current" />
@@ -267,7 +267,7 @@ export default function FoundPage() {
             </button>
           </div>
 
-          <div className="relative mx-4 mt-2 aspect-[4/5] rounded-3xl overflow-hidden ring-1 ring-zinc-800 bg-zinc-900">
+          <div className="relative mx-4 mt-2 aspect-[4/5] rounded-3xl overflow-hidden ring-1 ring-border-custom bg-card-bg">
             {!videoReady && (
               <div className="absolute inset-0 flex items-center justify-center z-10">
                 <Loader2 size={48} className="animate-spin text-zinc-500" />
@@ -288,14 +288,14 @@ export default function FoundPage() {
 
           <div className="flex-1 flex flex-col justify-end pb-8 relative z-20">
             <div className="mb-6 text-center">
-              <p className="text-sm font-medium">
+              <p className="text-sm font-medium text-foreground">
                 Insert image {currentShot + 1} of 6
               </p>
               <div className="mt-3 flex justify-center gap-2">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <span
                     key={i}
-                    className={`w-2.5 h-2.5 rounded-full ${i < currentShot ? "bg-blue-500" : "bg-white/10"}`}
+                    className={`w-2.5 h-2.5 rounded-full ${i < currentShot ? "bg-primary" : "bg-foreground/20"}`}
                   />
                 ))}
               </div>
@@ -311,15 +311,15 @@ export default function FoundPage() {
                   setCurrentShot((s) => s - 1);
                 }}
                 disabled={currentShot === 0}
-                className="p-3 rounded-full bg-zinc-800 text-zinc-300 disabled:opacity-0"
+                className="p-3 rounded-full bg-btn-bg text-foreground border border-border-custom shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <RotateCcw size={24} />
               </button>
               <button
                 onClick={takePhoto}
-                className="w-20 h-20 rounded-full border-4 border-[#FFD60A] flex items-center justify-center active:scale-95"
+                className="w-20 h-20 rounded-full border-4 border-primary flex items-center justify-center active:scale-95 transition-all bg-transparent"
               >
-                <div className="w-16 h-16 rounded-full bg-white" />
+                <div className="w-16 h-16 rounded-full bg-foreground" />
               </button>
               <div className="w-[50px]"></div>
             </div>
@@ -329,12 +329,12 @@ export default function FoundPage() {
 
       {!isCameraOpen && (
         <div className="px-4 pt-8 pb-28 space-y-8">
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Package className="text-blue-500" /> Report Found Item
+          <h1 className="text-2xl font-semibold flex items-center gap-2 text-foreground">
+            <Package className="text-primary" /> Report Found Item
           </h1>
 
           <div>
-            <p className="text-sm mb-3 text-zinc-400">
+            <p className="text-sm mb-3 text-secondary-text">
               {itemFiles.filter(Boolean).length} of 6 photos added
             </p>
             <div className="grid grid-cols-3 gap-4">
@@ -342,12 +342,12 @@ export default function FoundPage() {
                 <button
                   key={i}
                   onClick={openCamera}
-                  className="aspect-square rounded-xl overflow-hidden relative flex items-center justify-center bg-zinc-900 border border-zinc-800"
+                  className="aspect-square rounded-xl overflow-hidden relative flex items-center justify-center bg-card-bg border border-border-custom hover:border-primary/50 transition-colors"
                 >
                   {img ? (
                     <img src={img} className="object-cover w-full h-full" />
                   ) : (
-                    <span className="text-2xl text-zinc-500">+</span>
+                    <span className="text-2xl text-secondary-text">+</span>
                   )}
                 </button>
               ))}
@@ -356,43 +356,44 @@ export default function FoundPage() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <h3 className="font-semibold">Item Name</h3>
+              <h3 className="font-semibold text-foreground">Item Name</h3>
               <input
                 value={itemName}
                 onChange={(e) => setItemName(e.target.value)}
                 placeholder="e.g. Blue Wallet"
-                className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 outline-none"
+                className="w-full p-3 rounded-xl bg-card-bg border border-border-custom text-foreground outline-none focus:border-primary transition-colors"
+                style={{ colorScheme: "dark light" }}
               />
             </div>
 
             <div className="space-y-2">
-              <h3 className="font-semibold">Description</h3>
+              <h3 className="font-semibold text-foreground">Description</h3>
               <textarea
                 value={itemDescription}
                 onChange={(e) => setItemDescription(e.target.value)}
                 rows={3}
                 placeholder="Details..."
-                className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 outline-none"
+                className="w-full p-3 rounded-xl bg-card-bg border border-border-custom text-foreground outline-none focus:border-primary transition-colors"
               />
             </div>
 
             <div className="space-y-2">
-              <h3 className="font-semibold">Where did you find it?</h3>
+              <h3 className="font-semibold text-foreground">Where did you find it?</h3>
               <input
                 value={foundLocation}
                 onChange={(e) => setFoundLocation(e.target.value)}
                 placeholder="Location"
-                className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 outline-none"
+                className="w-full p-3 rounded-xl bg-card-bg border border-border-custom text-foreground outline-none focus:border-primary transition-colors"
               />
             </div>
 
             <div className="space-y-2">
-              <h3 className="font-semibold">Submit to</h3>
+              <h3 className="font-semibold text-foreground">Submit to</h3>
               <div className="grid gap-2">
                 {DROP_LOCATIONS.map((loc) => (
                   <label
                     key={loc}
-                    className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${submitLocation === loc ? "border-blue-500 bg-blue-500/10" : "border-zinc-800 bg-zinc-900"}`}
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${submitLocation === loc ? "border-primary bg-primary/10" : "border-border-custom bg-card-bg text-foreground"}`}
                   >
                     <input
                       type="radio"
@@ -404,8 +405,8 @@ export default function FoundPage() {
                       size={16}
                       className={
                         submitLocation === loc
-                          ? "text-blue-500"
-                          : "text-zinc-500"
+                          ? "text-primary"
+                          : "text-secondary-text"
                       }
                     />
                     <span>{loc}</span>
@@ -418,7 +419,7 @@ export default function FoundPage() {
           <button
             onClick={handleSubmit}
             disabled={loading || !itemName || !submitLocation}
-            className={`w-full py-4 rounded-2xl font-bold transition ${loading ? "bg-zinc-700" : "bg-blue-600 hover:bg-blue-500"} text-white`}
+            className={`w-full py-4 rounded-2xl font-bold transition shadow-lg ${loading ? "bg-zinc-700" : "bg-primary hover:brightness-110 active:scale-[0.98]"} text-white`}
           >
             {loading ? (
               <Loader2 className="animate-spin mx-auto" />
