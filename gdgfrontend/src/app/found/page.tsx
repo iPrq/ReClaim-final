@@ -38,7 +38,7 @@ export default function FoundPage() {
   const [currentShot, setCurrentShot] = useState(0);
   const [flashOn, setFlashOn] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
-  const [isFlashing, setIsFlashing] = useState(false); // Visual feedback state
+  const [isFlashing, setIsFlashing] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -49,9 +49,10 @@ export default function FoundPage() {
   const [foundLocation, setFoundLocation] = useState("");
   const [submitLocation, setSubmitLocation] = useState("");
   const [loading, setLoading] = useState(false);
+
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL!;
 
-  /* ================= PERMISSIONS ================= */
+  /* ================= HELPERS ================= */
 
   const base64ToFile = (dataurl: string, filename: string): File => {
     const arr = dataurl.split(",");
@@ -65,9 +66,12 @@ export default function FoundPage() {
     return new File([u8arr], filename, { type: mime });
   };
 
+  /* ================= SUBMIT LOGIC ================= */
+
   const handleSubmit = async () => {
     const validBase64Strings = itemFiles.filter((f): f is string => !!f);
 
+    // Validation
     if (
       !itemName ||
       !itemDescription ||
@@ -82,12 +86,14 @@ export default function FoundPage() {
     setLoading(true);
 
     const formData = new FormData();
+
+    // Appending all text fields for JSON storage on backend
     formData.append("item_name", itemName);
+    formData.append("description", itemDescription);
+    formData.append("found_location", foundLocation);
+    formData.append("pickup_location", submitLocation);
 
-    // formData.append("description", itemDescription);
-    // formData.append("found_location", foundLocation);
-    // formData.append("pickup_location", submitLocation);
-
+    // Append images
     validBase64Strings.forEach((base64, index) => {
       const file = base64ToFile(base64, `item-${index}.jpg`);
       formData.append("files", file);
@@ -97,42 +103,30 @@ export default function FoundPage() {
       const res = await fetch(`${BACKEND_URL}/found`, {
         method: "POST",
         body: formData,
+        // Note: Don't set Content-Type header when sending FormData,
+        // the browser will set it automatically with the boundary.
       });
 
       if (!res.ok) throw new Error("Upload failed");
 
-      alert("Item registered successfully");
+      alert("Item registered successfully and saved to storage!");
+
+      // Reset Form
       setItemName("");
       setItemDescription("");
       setFoundLocation("");
       setSubmitLocation("");
       setItemFiles(Array(6).fill(null));
-    } catch {
+      setCurrentShot(0);
+    } catch (error) {
+      console.error(error);
       alert("Server error while uploading");
     } finally {
       setLoading(false);
     }
   };
 
-  const ensureCameraPermission = async (): Promise<"granted" | "blocked"> => {
-    const status = await Camera.checkPermissions();
-    if (status.camera === "granted") return "granted";
-
-    const req = await Camera.requestPermissions({
-      permissions: ["camera"],
-    });
-
-    return req.camera === "granted" ? "granted" : "blocked";
-  };
-
-  const openSystemSettings = async () => {
-    await NativeSettings.open({
-      optionAndroid: AndroidSettings.ApplicationDetails,
-      optionIOS: IOSSettings.App,
-    });
-  };
-
-  /* ================= CAMERA ================= */
+  /* ================= CAMERA LOGIC ================= */
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -165,58 +159,46 @@ export default function FoundPage() {
       if (stream) {
         stream.getTracks().forEach((t) => t.stop());
       }
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
     };
   }, [isCameraOpen]);
 
-  /* ================= CAMERA ACTIONS ================= */
-
   const openCamera = async () => {
-    // Native permission check if wrapper is used, otherwise browser handles it
     if (Capacitor.isNativePlatform()) {
       const status = await Camera.checkPermissions();
       if (status.camera !== "granted") {
         const req = await Camera.requestPermissions();
         if (req.camera !== "granted") {
-          // Optionally ask to open settings
           if (window.confirm("Camera permission required. Open settings?")) {
-            await openSystemSettings();
+            await NativeSettings.open({
+              optionAndroid: AndroidSettings.ApplicationDetails,
+              optionIOS: IOSSettings.App,
+            });
           }
           return;
         }
       }
     }
-
     setCurrentShot(itemFiles.filter(Boolean).length);
     setIsCameraOpen(true);
   };
-
-  const closeCamera = () => setIsCameraOpen(false);
 
   const takePhoto = async () => {
     if (!videoRef.current || !canvasRef.current || currentShot >= 6) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-
-    // Explicit 3:4 Aspect Ratio Capture
-    const vidW = video.videoWidth;
-    const vidH = video.videoHeight;
     const targetRatio = 3 / 4;
 
+    const vidW = video.videoWidth;
+    const vidH = video.videoHeight;
     let cropW, cropH, cropX, cropY;
 
-    // Determine crop area to maintain 3:4 ratio from the center
     if (vidW / vidH > targetRatio) {
-      // Video is wider than 3:4 -> crop excess width
       cropH = vidH;
       cropW = cropH * targetRatio;
       cropX = (vidW - cropW) / 2;
       cropY = 0;
     } else {
-      // Video is taller than 3:4 -> crop excess height
       cropW = vidW;
       cropH = cropW / targetRatio;
       cropX = 0;
@@ -227,7 +209,6 @@ export default function FoundPage() {
     canvas.height = cropH;
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      // Visual feedback
       setIsFlashing(true);
       setTimeout(() => setIsFlashing(false), 150);
 
@@ -248,52 +229,34 @@ export default function FoundPage() {
     }
   };
 
-  const retakeLast = () => {
-    if (currentShot === 0) return;
-    setItemFiles((prev) => {
-      const copy = [...prev];
-      copy[currentShot - 1] = null;
-      return copy;
-    });
-    setCurrentShot((s) => s - 1);
-  };
-
-  const toggleFlash = async () => {
-    if (!videoRef.current || !videoRef.current.srcObject) return;
-    const track = (
-      videoRef.current.srcObject as MediaStream
-    ).getVideoTracks()[0];
-    try {
-      // @ts-ignore
-      await track.applyConstraints({ advanced: [{ torch: !flashOn }] });
-      setFlashOn(!flashOn);
-    } catch (e) {
-      console.error("Flash error", e);
-    }
-  };
-
-  const photosAdded = itemFiles.filter(Boolean).length;
-
-  /* ================= UI ================= */
-
   return (
     <div className="min-h-screen relative bg-background text-foreground">
-      {/* Hidden Canvas */}
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* CAMERA OVERLAY - Z-60 to hide NavBar */}
       {isCameraOpen && (
         <div className="fixed inset-0 z-[60] flex flex-col bg-black pt-16">
-          {/* TOP BAR - MOVED OUT OF VIDEO */}
           <div className="absolute top-0 left-0 right-0 px-4 pt-4 flex justify-between items-center z-20">
             <button
-              onClick={closeCamera}
+              onClick={() => setIsCameraOpen(false)}
               className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full border border-white/10"
             >
               <X size={26} />
             </button>
             <button
-              onClick={toggleFlash}
+              onClick={async () => {
+                if (!videoRef.current?.srcObject) return;
+                const track = (
+                  videoRef.current.srcObject as MediaStream
+                ).getVideoTracks()[0];
+                try {
+                  await track.applyConstraints({
+                    advanced: [{ torch: !flashOn } as any],
+                  });
+                  setFlashOn(!flashOn);
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
               className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full border border-white/10"
             >
               {flashOn ? (
@@ -304,14 +267,12 @@ export default function FoundPage() {
             </button>
           </div>
 
-          {/* VIDEO CONTAINER - Rounded & Aspect Ratio */}
           <div className="relative mx-4 mt-2 aspect-[4/5] rounded-3xl overflow-hidden ring-1 ring-zinc-800 bg-zinc-900">
             {!videoReady && (
               <div className="absolute inset-0 flex items-center justify-center z-10">
                 <Loader2 size={48} className="animate-spin text-zinc-500" />
               </div>
             )}
-
             <video
               ref={videoRef}
               autoPlay
@@ -320,195 +281,150 @@ export default function FoundPage() {
               onPlaying={() => setVideoReady(true)}
               className={`w-full h-full object-cover transition-opacity duration-300 ${videoReady ? "opacity-100" : "opacity-0"}`}
             />
-
-            {/* FLASH OVERLAY */}
             <div
               className={`absolute inset-0 bg-white pointer-events-none transition-opacity duration-150 ease-out ${isFlashing ? "opacity-100" : "opacity-0"}`}
             />
           </div>
 
-          {/* CONTROLS BELOW */}
           <div className="flex-1 flex flex-col justify-end pb-8 relative z-20">
-            {/* INFO */}
             <div className="mb-6 text-center">
               <p className="text-sm font-medium">
                 Insert image {currentShot + 1} of 6
               </p>
-              <p className="text-xs mt-1 px-6 text-zinc-400">
-                Take photos in a clear environment from different angles
-              </p>
-
-              {/* PROGRESS DOTS */}
               <div className="mt-3 flex justify-center gap-2">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <span
                     key={i}
-                    className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                      i < currentShot ? "bg-accent-blue" : "bg-white/10"
-                    }`}
+                    className={`w-2.5 h-2.5 rounded-full ${i < currentShot ? "bg-blue-500" : "bg-white/10"}`}
                   />
                 ))}
               </div>
             </div>
-
-            {/* ACTION BUTTONS */}
             <div className="flex items-center justify-center gap-12 pb-4">
               <button
-                onClick={retakeLast}
+                onClick={() => {
+                  setItemFiles((prev) => {
+                    const c = [...prev];
+                    c[currentShot - 1] = null;
+                    return c;
+                  });
+                  setCurrentShot((s) => s - 1);
+                }}
                 disabled={currentShot === 0}
-                style={{ opacity: currentShot === 0 ? 0 : 1 }}
-                className="p-3 rounded-full bg-zinc-800 text-zinc-300 transition-opacity"
+                className="p-3 rounded-full bg-zinc-800 text-zinc-300 disabled:opacity-0"
               >
                 <RotateCcw size={24} />
               </button>
               <button
                 onClick={takePhoto}
-                className="w-20 h-20 rounded-full border-4 border-[#FFD60A] flex items-center justify-center active:scale-95 transition-transform"
+                className="w-20 h-20 rounded-full border-4 border-[#FFD60A] flex items-center justify-center active:scale-95"
               >
                 <div className="w-16 h-16 rounded-full bg-white" />
               </button>
-              <div className="w-[50px]"></div> {/* Spacer */}
+              <div className="w-[50px]"></div>
             </div>
           </div>
         </div>
       )}
 
-      {/* FORM */}
       {!isCameraOpen && (
         <div className="px-4 pt-8 pb-28 space-y-8">
           <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Package className="text-accent-blue" />
-            Report Found Item
+            <Package className="text-blue-500" /> Report Found Item
           </h1>
 
-          {/* PHOTO GRID */}
           <div>
-            <p className="text-sm mb-3 text-secondary-text">
-              {photosAdded} of 6 photos added
+            <p className="text-sm mb-3 text-zinc-400">
+              {itemFiles.filter(Boolean).length} of 6 photos added
             </p>
-
             <div className="grid grid-cols-3 gap-4">
               {itemFiles.map((img, i) => (
                 <button
                   key={i}
                   onClick={openCamera}
-                  className="aspect-square rounded-xl overflow-hidden relative flex items-center justify-center bg-btn-bg border border-border-custom"
+                  className="aspect-square rounded-xl overflow-hidden relative flex items-center justify-center bg-zinc-900 border border-zinc-800"
                 >
                   {img ? (
-                    <>
-                      <img src={img} className="object-cover w-full h-full" />
-                      <div className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold bg-accent-blue text-white">
-                        ✓
-                      </div>
-                    </>
+                    <img src={img} className="object-cover w-full h-full" />
                   ) : (
-                    <span className="text-2xl text-secondary-text">+</span>
+                    <span className="text-2xl text-zinc-500">+</span>
                   )}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* ITEM NAME */}
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">What did you find?</h3>
-            <p className="text-sm text-secondary-text">
-              Help us identify the item clearly
-            </p>
-
-            <div className="rounded-2xl px-4 py-3 bg-btn-bg border border-border-custom">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h3 className="font-semibold">Item Name</h3>
               <input
-                placeholder="e.g. Black wallet, AirPods case"
                 value={itemName}
                 onChange={(e) => setItemName(e.target.value)}
-                className="w-full bg-transparent outline-none text-foreground placeholder:text-secondary-text"
+                placeholder="e.g. Blue Wallet"
+                className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 outline-none"
               />
             </div>
-          </div>
 
-          {/* DESCRIPTION */}
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Tell us more about it</h3>
-            <p className="text-sm text-secondary-text">
-              Any details that could help the owner
-            </p>
-
-            <div className="rounded-2xl px-4 py-3 bg-btn-bg border border-border-custom">
+            <div className="space-y-2">
+              <h3 className="font-semibold">Description</h3>
               <textarea
-                rows={4}
-                placeholder="Color, brand, scratches, stickers"
                 value={itemDescription}
                 onChange={(e) => setItemDescription(e.target.value)}
-                className="w-full bg-transparent outline-none resize-none text-foreground placeholder:text-secondary-text"
+                rows={3}
+                placeholder="Details..."
+                className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 outline-none"
               />
             </div>
-          </div>
 
-          {/* LOCATION */}
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Where did you find it?</h3>
-            <p className="text-sm text-secondary-text">
-              Be as specific as you can
-            </p>
-
-            <div className="rounded-2xl px-4 py-3 bg-btn-bg border border-border-custom">
+            <div className="space-y-2">
+              <h3 className="font-semibold">Where did you find it?</h3>
               <input
-                placeholder="e.g. Library 2nd floor, near stairs"
                 value={foundLocation}
                 onChange={(e) => setFoundLocation(e.target.value)}
-                className="w-full bg-transparent outline-none text-foreground placeholder:text-secondary-text"
+                placeholder="Location"
+                className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 outline-none"
               />
             </div>
-          </div>
 
-          {/* DROP LOCATION */}
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Drop Locations</h3>
-            <p className="text-sm text-secondary-text">
-              Please submit the item to one of these verified locations
-            </p>
-
-            <div className="pt-2 flex flex-col gap-2">
-              {DROP_LOCATIONS.map((loc) => (
-                <label
-                  key={loc}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors border ${
-                    submitLocation === loc
-                      ? "bg-accent-blue/15 border-accent-blue"
-                      : "bg-btn-bg border-border-custom"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    checked={submitLocation === loc}
-                    onChange={() => setSubmitLocation(loc)}
-                    className="accent-accent-blue"
-                  />
-                  <MapPin size={16} />
-                  <span>{loc}</span>
-                </label>
-              ))}
+            <div className="space-y-2">
+              <h3 className="font-semibold">Submit to</h3>
+              <div className="grid gap-2">
+                {DROP_LOCATIONS.map((loc) => (
+                  <label
+                    key={loc}
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${submitLocation === loc ? "border-blue-500 bg-blue-500/10" : "border-zinc-800 bg-zinc-900"}`}
+                  >
+                    <input
+                      type="radio"
+                      checked={submitLocation === loc}
+                      onChange={() => setSubmitLocation(loc)}
+                      className="hidden"
+                    />
+                    <MapPin
+                      size={16}
+                      className={
+                        submitLocation === loc
+                          ? "text-blue-500"
+                          : "text-zinc-500"
+                      }
+                    />
+                    <span>{loc}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* REPORT BUTTON */}
           <button
             onClick={handleSubmit}
-            disabled={
-              photosAdded < 6 ||
-              !itemName ||
-              !itemDescription ||
-              !foundLocation ||
-              !submitLocation ||
-              loading
-            }
-            className={`w-full py-4 rounded-2xl text-lg font-semibold transition flex items-center justify-center border ${
-              photosAdded === 6
-                ? "bg-accent-blue text-white border-accent-blue"
-                : "bg-btn-bg text-secondary-text border-border-custom"
-            } ${loading ? "opacity-70" : ""}`}
+            disabled={loading || !itemName || !submitLocation}
+            className={`w-full py-4 rounded-2xl font-bold transition ${loading ? "bg-zinc-700" : "bg-blue-600 hover:bg-blue-500"} text-white`}
           >
-            {loading ? "Submitting..." : "Report Item"}
+            {loading ? (
+              <Loader2 className="animate-spin mx-auto" />
+            ) : (
+              "Submit Report"
+            )}
           </button>
         </div>
       )}

@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin, Calendar, X } from "lucide-react";
 
 /* ================= CONFIG ================= */
-const API = "https://campus-search-api-680513043824.us-central1.run.app";
+const API = process.env.NEXT_PUBLIC_BACKEND_URL!;
 
 /* ================= TYPES ================= */
 export interface ReportedItem {
@@ -47,7 +47,7 @@ export default function LostAndFound() {
         const data: ItemsResponse = await res.json();
 
         const enriched: ReportedItem[] = await Promise.all(
-          data.items.map(async (name) => {
+          (data.items ?? []).map(async (name) => {
             try {
               const imgRes = await fetch(
                 `${API}/items/${encodeURIComponent(name)}/images`,
@@ -142,7 +142,10 @@ export default function LostAndFound() {
         </div>
 
         {/* GRID */}
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <motion.div
+          layout
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
           {sortedItems.map((item) => (
             <ItemCard
               key={item.id}
@@ -150,7 +153,15 @@ export default function LostAndFound() {
               onClick={() => setActiveItem(item)}
             />
           ))}
-        </div>
+        </motion.div>
+
+        {sortedItems.length === 0 && !loading && (
+          <div className="text-center py-20 border-2 border-dashed border-border-custom rounded-3xl">
+            <p className="text-secondary-text">
+              No items found in the current registry.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* MODAL */}
@@ -167,7 +178,9 @@ export default function LostAndFound() {
 /* ================= ITEM CARD ================= */
 function ItemCard({ item, onClick }: { item: ReportedItem; onClick: () => void }) {
   return (
-    <button
+    <motion.button
+      layout
+      whileHover={{ y: -5 }}
       onClick={onClick}
       className="text-left w-full rounded-xl overflow-hidden transition hover:scale-[1.02] bg-card-bg border border-border-custom"
     >
@@ -193,7 +206,7 @@ function ItemCard({ item, onClick }: { item: ReportedItem; onClick: () => void }
           {item.description}
         </p>
       </div>
-    </button>
+    </motion.button>
   );
 }
 
@@ -275,6 +288,25 @@ function ItemModal({ item, onClose }: { item: ReportedItem; onClose: () => void 
             </div>
           </div>
         </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function InfoBlock({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value?: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2 text-secondary-text uppercase text-[10px] font-bold tracking-widest">
+        {icon}
+        {label}
       </div>
     </div>
   );
