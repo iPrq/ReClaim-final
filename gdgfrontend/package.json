@@ -16,7 +16,7 @@
     "@capacitor/core": "^6.2.1",
     "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
     "capacitor-native-settings": "^6.0.6",
-    "firebase": "^12.7.0",
+    "firebase": "^12.8.0",
     "framer-motion": "^12.24.10",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",

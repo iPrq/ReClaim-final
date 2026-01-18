@@ -16,16 +16,14 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 
-# Google Cloud
+ 
 from google.cloud import storage
 from google.auth import default
 
-# CLIP
+ 
 from transformers import CLIPProcessor, CLIPModel
 
-# =============================
-# FASTAPI APP
-# =============================
+ 
 app = FastAPI()
 
 app.add_middleware(
@@ -35,40 +33,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# =============================
-# GCS SETUP
-# =============================
+ 
 BUCKET_NAME = "campus-finder-bucket"
 
 gcp_credentials, project_id = default()
 storage_client = storage.Client(credentials=gcp_credentials)
 bucket = storage_client.bucket(BUCKET_NAME)
 
-# =============================
-# DEVICE
-# =============================
+ 
+ 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# =============================
-# CLIP SINGLETON
-# =============================
+ 
 clip_model: CLIPModel | None = None
 clip_processor: CLIPProcessor | None = None
 
-# =============================
-# CACHES (🔥 FAST)
-# =============================
+ 
 embedding_cache: Dict[str, List[torch.Tensor]] = {}
 folder_images_cache: Dict[str, List[str]] = {}
 
-# =============================
-# LOAD CLIP + CACHE ON STARTUP
-# =============================
+ 
 @app.on_event("startup")
 def startup():
     global clip_model, clip_processor
 
-    # ---- Load CLIP ----
+    
     clip_model = CLIPModel.from_pretrained(
         "openai/clip-vit-base-patch32"
     ).to(device)
@@ -79,9 +68,9 @@ def startup():
     )
 
     clip_model.eval()
-    print("✅ CLIP loaded")
+    print("CLIP loaded")
 
-    # ---- Preload GCS data ----
+     
     print("⏳ Preloading embeddings + images from GCS...")
 
     blobs = storage_client.list_blobs(BUCKET_NAME)
@@ -93,12 +82,12 @@ def startup():
 
         folder, filename = parts[0], parts[1]
 
-        # Cache images
+         
         if not filename.endswith(".pt"):
             folder_images_cache.setdefault(folder, []).append(filename)
             continue
 
-        # Cache embeddings
+        
         vec = torch.load(
             io.BytesIO(blob.download_as_bytes()),
             map_location="cpu"
@@ -110,9 +99,7 @@ def startup():
         f"{sum(len(v) for v in folder_images_cache.values())} images"
     )
 
-# =============================
-# EMBEDDING UTILS
-# =============================
+ 
 def get_embeddings(image_bytes_list: List[bytes]) -> torch.Tensor:
     images = []
 
@@ -132,9 +119,7 @@ def get_embeddings(image_bytes_list: List[bytes]) -> torch.Tensor:
     feats = feats / feats.norm(dim=-1, keepdim=True).clamp(min=1e-6)
     return feats.cpu()
 
-# =============================
-# BACKGROUND TASK
-# =============================
+ #background task to generate and upload embeddings
 def generate_and_upload_embeddings(
     item_name: str,
     image_bytes: List[bytes],
@@ -161,25 +146,19 @@ def generate_and_upload_embeddings(
     except Exception as e:
         print(f"❌ BG embedding failed: {e}")
 
-# =============================
-# HEALTH
-# =============================
+ 
 @app.get("/")
 async def root():
     return {"status": "online"}
 
-# =============================
-# ITEM LIST (⚡ INSTANT)
-# =============================
+ 
 @app.get("/items")
 async def list_items():
     return {
         "items": list(folder_images_cache.keys())
     }
 
-# =============================
-# GET ITEM IMAGES (⚡ INSTANT)
-# =============================
+ 
 from datetime import timedelta
 
 @app.get("/items/{item_name}/images")
@@ -187,27 +166,38 @@ async def get_item_images(item_name: str):
     if item_name not in folder_images_cache:
         raise HTTPException(404, "Item not found")
 
-    urls = []
+    return {
+        "images": folder_images_cache[item_name]
+    }
 
-    for filename in folder_images_cache[item_name]:
-        blob = bucket.blob(f"{item_name}/{filename}")
+from fastapi.responses import StreamingResponse
+import mimetypes
+import asyncio
+from pathlib import PurePosixPath
 
-        url = blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(minutes=30),
-            method="GET",
-            service_account_email=gcp_credentials.service_account_email,
-        )
+@app.get("/items/{item_name}/image/{filename}")
+async def serve_image(item_name: str, filename: str):
+    safe_name = PurePosixPath(filename).name
+    blob = bucket.blob(f"{item_name}/{safe_name}")
+
+    try:
+        image_bytes = await asyncio.to_thread(blob.download_as_bytes)
+    except Exception:
+        raise HTTPException(404, "Image not found")
+
+    media_type, _ = mimetypes.guess_type(safe_name)
+
+    return StreamingResponse(
+        io.BytesIO(image_bytes),
+        media_type=media_type or "application/octet-stream",
+        headers={
+            "Cache-Control": "public, max-age=3600"
+        }
+    )
 
 
-        urls.append(url)
 
-    return {"images": urls}
-
-
-# =============================
-# REPORT FOUND (UNCHANGED)
-# =============================
+ 
 @app.post("/found")
 async def report_found(
     background_tasks: BackgroundTasks,
@@ -250,9 +240,7 @@ async def report_found(
     except Exception as e:
         raise HTTPException(500, str(e))
 
-# =============================
-# SEARCH (⚡ NO GCS CALLS)
-# =============================
+ 
 @app.post("/search")
 async def search_item(file: UploadFile = File(...)):
     try:
@@ -285,9 +273,7 @@ async def search_item(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(500, str(e))
 
-# =============================
-# RUN
-# =============================
+ 
 if __name__ == "__main__":
     import uvicorn
 

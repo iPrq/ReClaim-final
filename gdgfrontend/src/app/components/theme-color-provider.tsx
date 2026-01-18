@@ -9,32 +9,38 @@ interface ThemeColorContextType {
   setThemeColor: (color: ThemeColor) => void;
 }
 
-const ThemeColorContext = createContext<ThemeColorContextType | undefined>(undefined);
+const ThemeColorContext = createContext<ThemeColorContextType | undefined>(
+  undefined,
+);
 
-export function ThemeColorProvider({ children }: { children: React.ReactNode }) {
-  const [themeColor, setThemeColorState] = useState<ThemeColor>("blue");
-  const [mounted, setMounted] = useState(false);
+export function ThemeColorProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [themeColor, setThemeColorInternal] = useState<ThemeColor>(() => {
+    if (typeof window === "undefined") return "blue";
+    const savedColor = localStorage.getItem("theme-color");
+    if (
+      savedColor === "blue" ||
+      savedColor === "red" ||
+      savedColor === "green"
+    ) {
+      return savedColor;
+    }
+    return "blue";
+  });
 
   useEffect(() => {
-    const savedColor = localStorage.getItem("theme-color") as ThemeColor;
-    if (savedColor) {
-      setThemeColorState(savedColor);
-      document.documentElement.setAttribute("data-theme-color", savedColor);
-    } else {
-      document.documentElement.setAttribute("data-theme-color", "blue");
-    }
-    setMounted(true);
-  }, []);
+    document.documentElement.setAttribute("data-theme-color", themeColor);
+  }, [themeColor]);
 
   const setThemeColor = (color: ThemeColor) => {
-    setThemeColorState(color);
+    setThemeColorInternal(color);
     localStorage.setItem("theme-color", color);
     document.documentElement.setAttribute("data-theme-color", color);
   };
 
-  // Prevent flash by not rendering until mounted (optional, but good for consistency)
-  // However, for colors, it might be better to render even if default to avoid layout shift, only color shift.
-  
   return (
     <ThemeColorContext.Provider value={{ themeColor, setThemeColor }}>
       {children}
@@ -44,7 +50,7 @@ export function ThemeColorProvider({ children }: { children: React.ReactNode }) 
 
 export function useThemeColor() {
   const context = useContext(ThemeColorContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useThemeColor must be used within a ThemeColorProvider");
   }
   return context;

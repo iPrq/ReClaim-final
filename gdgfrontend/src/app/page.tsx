@@ -22,7 +22,7 @@ export default function GetStartedPage() {
             alt="Get Started Background"
             fill
             priority
-            className="object-cover"
+            className="object-cover pb-20"
           />
 
           {/* GRADIENT OVERLAY */}
@@ -40,7 +40,7 @@ export default function GetStartedPage() {
           {/* CONTENT */}
           <div className="relative z-10 flex flex-col h-full justify-end px-6 pb-32 text-center">
             {/* Title */}
-            <div className="mb-12">
+            <div className="mb-10">
               <h1 className="text-white text-[44px] font-semibold tracking-tight">
                 Reclaim
               </h1>

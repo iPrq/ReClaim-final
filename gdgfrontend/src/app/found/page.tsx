@@ -21,17 +21,17 @@ import {
 /* ================= CONSTANTS ================= */
 
 const DROP_LOCATIONS = [
-  "College Security Office",
+  "Admin Block Reception",
   "Library Front Desk",
-  "Main Administration Block",
-  "Hostel Warden Office",
+  "A Block Security",
+  "B Block Auditorium",
 ];
 
 /* ================= COMPONENT ================= */
 
 export default function FoundPage() {
   const [itemFiles, setItemFiles] = useState<(string | null)[]>(
-    Array(6).fill(null)
+    Array(6).fill(null),
   );
 
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -114,9 +114,7 @@ export default function FoundPage() {
     }
   };
 
-  const ensureCameraPermission = async (): Promise<
-    "granted" | "blocked"
-  > => {
+  const ensureCameraPermission = async (): Promise<"granted" | "blocked"> => {
     const status = await Camera.checkPermissions();
     if (status.camera === "granted") return "granted";
 
@@ -182,11 +180,11 @@ export default function FoundPage() {
       if (status.camera !== "granted") {
         const req = await Camera.requestPermissions();
         if (req.camera !== "granted") {
-           // Optionally ask to open settings
-           if(window.confirm("Camera permission required. Open settings?")) {
-              await openSystemSettings();
-           }
-           return;
+          // Optionally ask to open settings
+          if (window.confirm("Camera permission required. Open settings?")) {
+            await openSystemSettings();
+          }
+          return;
         }
       }
     }
@@ -202,51 +200,51 @@ export default function FoundPage() {
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    
+
     // Explicit 3:4 Aspect Ratio Capture
     const vidW = video.videoWidth;
     const vidH = video.videoHeight;
-    const targetRatio = 3 / 4; 
-    
+    const targetRatio = 3 / 4;
+
     let cropW, cropH, cropX, cropY;
 
     // Determine crop area to maintain 3:4 ratio from the center
     if (vidW / vidH > targetRatio) {
-       // Video is wider than 3:4 -> crop excess width
-       cropH = vidH; 
-       cropW = cropH * targetRatio;
-       cropX = (vidW - cropW) / 2;
-       cropY = 0;
+      // Video is wider than 3:4 -> crop excess width
+      cropH = vidH;
+      cropW = cropH * targetRatio;
+      cropX = (vidW - cropW) / 2;
+      cropY = 0;
     } else {
-       // Video is taller than 3:4 -> crop excess height
-       cropW = vidW;
-       cropH = cropW / targetRatio;
-       cropX = 0;
-       cropY = (vidH - cropH) / 2;
+      // Video is taller than 3:4 -> crop excess height
+      cropW = vidW;
+      cropH = cropW / targetRatio;
+      cropX = 0;
+      cropY = (vidH - cropH) / 2;
     }
-    
+
     canvas.width = cropW;
     canvas.height = cropH;
     const ctx = canvas.getContext("2d");
-    if(ctx) {
-        // Visual feedback
-        setIsFlashing(true);
-        setTimeout(() => setIsFlashing(false), 150);
-        
-        ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-        const base64 = canvas.toDataURL("image/jpeg", 0.9);
-        
-        setItemFiles((prev) => {
-          const copy = [...prev];
-          copy[currentShot] = base64;
-          return copy;
-        });
+    if (ctx) {
+      // Visual feedback
+      setIsFlashing(true);
+      setTimeout(() => setIsFlashing(false), 150);
 
-        if (currentShot === 5) {
-          setTimeout(() => setIsCameraOpen(false), 300);
-        } else {
-          setCurrentShot((s) => s + 1);
-        }
+      ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+      const base64 = canvas.toDataURL("image/jpeg", 0.9);
+
+      setItemFiles((prev) => {
+        const copy = [...prev];
+        copy[currentShot] = base64;
+        return copy;
+      });
+
+      if (currentShot === 5) {
+        setTimeout(() => setIsCameraOpen(false), 300);
+      } else {
+        setCurrentShot((s) => s + 1);
+      }
     }
   };
 
@@ -262,17 +260,17 @@ export default function FoundPage() {
 
   const toggleFlash = async () => {
     if (!videoRef.current || !videoRef.current.srcObject) return;
-    const track = (videoRef.current.srcObject as MediaStream).getVideoTracks()[0];
+    const track = (
+      videoRef.current.srcObject as MediaStream
+    ).getVideoTracks()[0];
     try {
-        // @ts-ignore
-        await track.applyConstraints({ advanced: [{ torch: !flashOn }] });
-        setFlashOn(!flashOn);
-    } catch(e) {
-        console.error("Flash error", e);
+      // @ts-ignore
+      await track.applyConstraints({ advanced: [{ torch: !flashOn }] });
+      setFlashOn(!flashOn);
+    } catch (e) {
+      console.error("Flash error", e);
     }
   };
-
-
 
   const photosAdded = itemFiles.filter(Boolean).length;
 
@@ -280,89 +278,98 @@ export default function FoundPage() {
 
   return (
     <div className="min-h-screen relative bg-background text-foreground">
-        {/* Hidden Canvas */}
-        <canvas ref={canvasRef} className="hidden" />
+      {/* Hidden Canvas */}
+      <canvas ref={canvasRef} className="hidden" />
 
       {/* CAMERA OVERLAY - Z-60 to hide NavBar */}
       {isCameraOpen && (
         <div className="fixed inset-0 z-[60] flex flex-col bg-black pt-16">
-            
-            {/* TOP BAR - MOVED OUT OF VIDEO */}
-            <div className="absolute top-0 left-0 right-0 px-4 pt-4 flex justify-between items-center z-20">
-                <button onClick={closeCamera} className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full border border-white/10">
-                  <X size={26} />
-                </button>
-                <button onClick={toggleFlash} className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full border border-white/10">
-                  {flashOn ? <Zap size={22} className="text-yellow-400 fill-current" /> : <ZapOff size={22} />}
-                </button>
+          {/* TOP BAR - MOVED OUT OF VIDEO */}
+          <div className="absolute top-0 left-0 right-0 px-4 pt-4 flex justify-between items-center z-20">
+            <button
+              onClick={closeCamera}
+              className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full border border-white/10"
+            >
+              <X size={26} />
+            </button>
+            <button
+              onClick={toggleFlash}
+              className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full border border-white/10"
+            >
+              {flashOn ? (
+                <Zap size={22} className="text-yellow-400 fill-current" />
+              ) : (
+                <ZapOff size={22} />
+              )}
+            </button>
+          </div>
+
+          {/* VIDEO CONTAINER - Rounded & Aspect Ratio */}
+          <div className="relative mx-4 mt-2 aspect-[4/5] rounded-3xl overflow-hidden ring-1 ring-zinc-800 bg-zinc-900">
+            {!videoReady && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <Loader2 size={48} className="animate-spin text-zinc-500" />
+              </div>
+            )}
+
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              onPlaying={() => setVideoReady(true)}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${videoReady ? "opacity-100" : "opacity-0"}`}
+            />
+
+            {/* FLASH OVERLAY */}
+            <div
+              className={`absolute inset-0 bg-white pointer-events-none transition-opacity duration-150 ease-out ${isFlashing ? "opacity-100" : "opacity-0"}`}
+            />
+          </div>
+
+          {/* CONTROLS BELOW */}
+          <div className="flex-1 flex flex-col justify-end pb-8 relative z-20">
+            {/* INFO */}
+            <div className="mb-6 text-center">
+              <p className="text-sm font-medium">
+                Insert image {currentShot + 1} of 6
+              </p>
+              <p className="text-xs mt-1 px-6 text-zinc-400">
+                Take photos in a clear environment from different angles
+              </p>
+
+              {/* PROGRESS DOTS */}
+              <div className="mt-3 flex justify-center gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                      i < currentShot ? "bg-accent-blue" : "bg-white/10"
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
 
-           {/* VIDEO CONTAINER - Rounded & Aspect Ratio */}
-           <div className="relative mx-4 mt-2 aspect-[4/5] rounded-3xl overflow-hidden ring-1 ring-zinc-800 bg-zinc-900">
-                {!videoReady && (
-                   <div className="absolute inset-0 flex items-center justify-center z-10">
-                      <Loader2 size={48} className="animate-spin text-zinc-500" />
-                   </div>
-                )}
-                
-                <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    onPlaying={() => setVideoReady(true)}
-                    className={`w-full h-full object-cover transition-opacity duration-300 ${videoReady ? 'opacity-100' : 'opacity-0'}`}
-                />
-
-                {/* FLASH OVERLAY */}
-                <div className={`absolute inset-0 bg-white pointer-events-none transition-opacity duration-150 ease-out ${isFlashing ? 'opacity-100' : 'opacity-0'}`} />
-           </div>
-
-           {/* CONTROLS BELOW */}
-           <div className="flex-1 flex flex-col justify-end pb-8 relative z-20">
-              {/* INFO */}
-              <div className="mb-6 text-center">
-                <p className="text-sm font-medium">
-                  Insert image {currentShot + 1} of 6
-                </p>
-                <p className="text-xs mt-1 px-6 text-zinc-400">
-                  Take photos in a clear environment from different angles
-                </p>
-                
-                {/* PROGRESS DOTS */}
-                <div className="mt-3 flex justify-center gap-2">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <span
-                      key={i}
-                      className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                        i < currentShot ? "bg-accent-blue" : "bg-white/10"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* ACTION BUTTONS */}
-              <div className="flex items-center justify-center gap-12 pb-4">
-                 <button
-                   onClick={retakeLast}
-                   disabled={currentShot === 0}
-                   style={{ opacity: currentShot === 0 ? 0 : 1 }}
-                   className="p-3 rounded-full bg-zinc-800 text-zinc-300 transition-opacity"
-                 >
-                    <RotateCcw size={24} />
-                 </button>
-
-                 <button
-                    onClick={takePhoto}
-                    className="w-20 h-20 rounded-full border-4 border-[#FFD60A] flex items-center justify-center active:scale-95 transition-transform"
-                 >
-                     <div className="w-16 h-16 rounded-full bg-white"/>
-                 </button>
-                 
-                 <div className="w-[50px]"></div> {/* Spacer */}
-              </div>
-           </div>
+            {/* ACTION BUTTONS */}
+            <div className="flex items-center justify-center gap-12 pb-4">
+              <button
+                onClick={retakeLast}
+                disabled={currentShot === 0}
+                style={{ opacity: currentShot === 0 ? 0 : 1 }}
+                className="p-3 rounded-full bg-zinc-800 text-zinc-300 transition-opacity"
+              >
+                <RotateCcw size={24} />
+              </button>
+              <button
+                onClick={takePhoto}
+                className="w-20 h-20 rounded-full border-4 border-[#FFD60A] flex items-center justify-center active:scale-95 transition-transform"
+              >
+                <div className="w-16 h-16 rounded-full bg-white" />
+              </button>
+              <div className="w-[50px]"></div> {/* Spacer */}
+            </div>
+          </div>
         </div>
       )}
 
@@ -389,18 +396,13 @@ export default function FoundPage() {
                 >
                   {img ? (
                     <>
-                      <img
-                        src={img}
-                        className="object-cover w-full h-full"
-                      />
+                      <img src={img} className="object-cover w-full h-full" />
                       <div className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold bg-accent-blue text-white">
                         ✓
                       </div>
                     </>
                   ) : (
-                    <span className="text-2xl text-secondary-text">
-                      +
-                    </span>
+                    <span className="text-2xl text-secondary-text">+</span>
                   )}
                 </button>
               ))}
@@ -409,9 +411,7 @@ export default function FoundPage() {
 
           {/* ITEM NAME */}
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">
-              What did you find?
-            </h3>
+            <h3 className="text-lg font-semibold">What did you find?</h3>
             <p className="text-sm text-secondary-text">
               Help us identify the item clearly
             </p>
@@ -428,9 +428,7 @@ export default function FoundPage() {
 
           {/* DESCRIPTION */}
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">
-              Tell us more about it
-            </h3>
+            <h3 className="text-lg font-semibold">Tell us more about it</h3>
             <p className="text-sm text-secondary-text">
               Any details that could help the owner
             </p>
@@ -448,9 +446,7 @@ export default function FoundPage() {
 
           {/* LOCATION */}
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">
-              Where did you find it?
-            </h3>
+            <h3 className="text-lg font-semibold">Where did you find it?</h3>
             <p className="text-sm text-secondary-text">
               Be as specific as you can
             </p>
@@ -467,9 +463,7 @@ export default function FoundPage() {
 
           {/* DROP LOCATION */}
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">
-              Drop Locations
-            </h3>
+            <h3 className="text-lg font-semibold">Drop Locations</h3>
             <p className="text-sm text-secondary-text">
               Please submit the item to one of these verified locations
             </p>

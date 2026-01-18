@@ -1,128 +1,141 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
 /* ================= CONFIG ================= */
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+const API = "https://campus-search-api-680513043824.us-central1.run.app";
 
 /* ================= TYPES ================= */
 export interface ReportedItem {
   id: string;
   name: string;
   description: string;
-  foundLocation?: string;
-  currentLocation?: string;
-  dateReported: string;
   images: string[];
-  type: "lost" | "found";
+  dateReported: string;
 }
 
-interface ItemsApiResponse {
+interface ItemsResponse {
   items: string[];
 }
 
-/* ================= MAIN COMPONENT ================= */
+interface ImagesResponse {
+  images: string[];
+}
+
+type SortMode = "date" | "az";
+
+/* ================= MAIN ================= */
 export default function LostAndFound() {
   const [items, setItems] = useState<ReportedItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<"name" | "date">("name");
   const [activeItem, setActiveItem] = useState<ReportedItem | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("date");
 
-  /* -------- FETCH DATA -------- */
   useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
       setLoading(true);
-
       try {
-        const res = await fetch(`${BACKEND_URL}/items`);
-        if (!res.ok) throw new Error("Failed to fetch items");
+        const res = await fetch(`${API}/items`);
+        const data: ItemsResponse = await res.json();
 
-        const data: ItemsApiResponse = await res.json();
+        const enriched: ReportedItem[] = await Promise.all(
+          data.items.map(async (name) => {
+            try {
+              const imgRes = await fetch(
+                `${API}/items/${encodeURIComponent(name)}/images`,
+              );
+              const imgData: ImagesResponse = await imgRes.json();
 
-        // Transform API data to match ReportedItem interface
-        const transformed: ReportedItem[] = (data.items ?? []).map(
-          (item, index) => ({
-            id: item.name ?? `item-${index}`,
-            name: item.name ?? "Unknown Item",
-            description: "No description available",
-            foundLocation: "Unknown Location",
-            currentLocation: "RV University",
-            images: [
-              item.thumbnail
-                ? item.thumbnail.startsWith("http") ||
-                  item.thumbnail.startsWith("data:")
-                  ? item.thumbnail
-                  : `${BACKEND_URL}${
-                      item.thumbnail.startsWith("/") ? "" : "/"
-                    }${item.thumbnail}`
-                : "https://via.placeholder.com/400x300?text=No+Image",
-            ],
-            dateReported: new Date().toISOString(),
-            type: "found",
-          })
+              return {
+                id: name,
+                name,
+                description: "Reported found on campus",
+                images: imgData.images ?? [],
+                dateReported: new Date().toISOString(),
+              };
+            } catch {
+              return {
+                id: name,
+                name,
+                description: "Reported found on campus",
+                images: [],
+                dateReported: new Date().toISOString(),
+              };
+            }
+          }),
         );
-        
-        setItems(transformed);
-      } catch (err) {
-        console.error("Fetch failed:", err);
+
+        setItems(enriched);
+      } catch (e) {
+        console.error(e);
         setItems([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    load();
   }, []);
 
-  /* -------- SORT -------- */
-  const sortedItems = [...items].sort((a, b) => {
-    if (sortBy === "name") {
-      return a.name.localeCompare(b.name);
+  /* ================= SORTING ================= */
+  const sortedItems = useMemo(() => {
+    if (sortMode === "az") {
+      return [...items].sort((a, b) => a.name.localeCompare(b.name));
     }
-    return (
-      new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime()
+    return [...items].sort(
+      (a, b) =>
+        new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime(),
     );
-  });
+  }, [items, sortMode]);
 
   return (
-    <div className="min-h-screen px-4 py-10 relative bg-background text-foreground">
+    <div className="min-h-screen px-4 py-10 bg-background text-foreground">
+      {/* LOADER */}
       <AnimatePresence>
         {loading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur"
           >
-            <Loader2 className="animate-spin mb-4 text-accent-yellow" size={48} />
-            <p className="text-sm font-medium tracking-wide">
-              Fetching Database...
-            </p>
+            <Loader2 className="animate-spin mb-3" size={40} />
+            <p className="text-sm">Loading items…</p>
           </motion.div>
         )}
       </AnimatePresence>
 
       <div className="max-w-6xl mx-auto">
-        {/* HEADER */}
-        <h1 className="text-3xl font-semibold">
-          Find Reported Items
-        </h1>
-        <p className="mt-1 text-sm text-secondary-text">
-          Helping lost belongings find their way back safely 
+        <h1 className="text-3xl font-semibold">Lost & Found</h1>
+        <p className="text-sm text-secondary-text mt-1">
+          Items reported on campus
         </p>
 
-        {/* SORT */}
-        <div className="mt-6">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="rounded-lg px-4 py-2 text-sm outline-none bg-btn-bg border border-border-custom text-foreground"
+        {/* FILTERS */}
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={() => setSortMode("date")}
+            className={`px-4 py-2 rounded-lg text-sm border transition ${
+              sortMode === "date"
+                ? "bg-foreground text-background"
+                : "hover:bg-muted"
+            }`}
           >
-            <option value="name">Name A–Z</option>
-            <option value="date">Date & Time</option>
-          </select>
+            Newest
+          </button>
+          <button
+            onClick={() => setSortMode("az")}
+            className={`px-4 py-2 rounded-lg text-sm border transition ${
+              sortMode === "az"
+                ? "bg-foreground text-background"
+                : "hover:bg-muted"
+            }`}
+          >
+            A → Z
+          </button>
         </div>
 
         {/* GRID */}
@@ -137,7 +150,6 @@ export default function LostAndFound() {
         </div>
       </div>
 
-      {/* MODAL */}
       {activeItem && (
         <ItemModal item={activeItem} onClose={() => setActiveItem(null)} />
       )}
@@ -153,26 +165,39 @@ function ItemCard({
   item: ReportedItem;
   onClick: () => void;
 }) {
+  const imgSrc =
+    item.images.length > 0
+      ? `${API}/items/${encodeURIComponent(item.name)}/image/${item.images[0]}`
+      : "/placeholder.png";
+
+  /* Prefetch modal images on hover */
+  const prefetchImages = () => {
+    item.images.forEach((img) => {
+      const i = new window.Image();
+      i.src = `${API}/items/${encodeURIComponent(item.name)}/image/${img}`;
+    });
+  };
+
   return (
     <button
       onClick={onClick}
-      className="text-left w-full rounded-xl overflow-hidden transition hover:scale-[1.02] bg-card-bg border border-border-custom"
+      onMouseEnter={prefetchImages}
+      className="text-left rounded-xl overflow-hidden border bg-card-bg hover:scale-[1.02] transition"
     >
-      <img
-        src={item.images[0]}
-        alt={item.name}
-        className="h-40 w-full object-cover"
-      />
+      <div className="relative h-40 w-full">
+        <Image
+          src={imgSrc}
+          alt={item.name}
+          fill
+          sizes="(max-width: 768px) 100vw, 33vw"
+          className="object-cover"
+          loading="lazy"
+        />
+      </div>
 
       <div className="p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-medium text-foreground">{item.name}</h3>
-          <span className="text-xs px-2 py-1 rounded-full bg-accent-yellow/20 text-accent-yellow">
-            FOUND
-          </span>
-        </div>
-
-        <p className="mt-2 text-sm line-clamp-2 text-secondary-text">
+        <h3 className="font-medium">{item.name}</h3>
+        <p className="mt-2 text-sm text-secondary-text line-clamp-2">
           {item.description}
         </p>
       </div>
@@ -190,78 +215,38 @@ function ItemModal({
 }) {
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="relative w-full max-w-4xl mx-4">
-        {/* TOP HANDLE / ARROW */}
-        <div className="flex justify-center mb-3">
-          <div className="h-1.5 w-12 rounded-full bg-zinc-600" />
+      <div className="bg-card-bg rounded-2xl max-w-4xl w-full mx-4 overflow-hidden">
+        {/* IMAGES */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+          {item.images.map((img) => (
+            <div key={img} className="relative h-44 w-full">
+              <Image
+                src={`${API}/items/${encodeURIComponent(item.name)}/image/${img}`}
+                alt={item.name}
+                fill
+                sizes="(max-width: 768px) 50vw, 33vw"
+                className="object-cover"
+                priority
+              />
+            </div>
+          ))}
         </div>
 
-        {/* MODAL CARD */}
-        <div className="rounded-2xl overflow-hidden shadow-xl bg-card-bg">
-          {/* IMAGE GALLERY */}
-          <div className="grid grid-cols-3 gap-1">
-            {item.images.map((img, index) => (
-              <img
-                key={index}
-                src={img}
-                alt=""
-                className="h-44 w-full object-cover"
-              />
-            ))}
+        {/* CONTENT */}
+        <div className="p-6">
+          <div className="flex justify-between items-start">
+            <h2 className="text-2xl font-semibold">{item.name}</h2>
+            <button
+              onClick={onClose}
+              className="text-xl text-secondary-text hover:text-foreground"
+            >
+              ✕
+            </button>
           </div>
 
-          <div className="p-8">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-2xl font-semibold text-foreground">
-                  {item.name}
-                </h2>
-                <span className="mt-2 inline-block text-xs tracking-wide px-3 py-1 rounded-full bg-accent-yellow/10 text-accent-yellow">
-                  FOUND ITEM
-                </span>
-              </div>
-
-              <button
-                onClick={onClose}
-                className="text-secondary-text hover:text-foreground text-xl"
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* DESCRIPTION */}
-            <p className="mt-6 text-sm text-secondary-text leading-relaxed max-w-2xl">
-              {item.description}
-            </p>
-
-            {/* DIVIDER */}
-            <div className="my-8 h-px bg-border-custom" />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
-              <InfoBlock label="Item Found At" value={item.foundLocation} />
-              <InfoBlock
-                label="Current Location"
-                value={item.currentLocation}
-              />
-              <InfoBlock
-                label="Date Reported"
-                value={new Date(item.dateReported).toLocaleString()}
-              />
-            </div>
-          </div>
+          <p className="mt-4 text-sm text-secondary-text">{item.description}</p>
         </div>
       </div>
-    </div>
-  );
-}
-
-/* ================= INFO BLOCK ================= */
-function InfoBlock({ label, value }: { label: string; value?: string }) {
-  return (
-    <div>
-      <p className="text-secondary-text mb-1 font-medium">{label}</p>
-      <p className="text-foreground font-medium">{value || "N/A"}</p>
     </div>
   );
 }

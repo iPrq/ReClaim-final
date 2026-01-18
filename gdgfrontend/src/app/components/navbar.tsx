@@ -43,7 +43,7 @@ export default function GlassyNavBar({
   const getActiveIndex = () =>
     Math.max(
       0,
-      tabs.findIndex((t) => t.id === activeTab)
+      tabs.findIndex((t) => t.id === activeTab),
     );
 
   return (
@@ -54,7 +54,7 @@ export default function GlassyNavBar({
       }}
     >
       {/* Menu List */}
-      <div className="flex items-center justify-center pb-[4px] pt-[12px] px-[12px] relative">
+      <div className="flex items-center justify-center pb-1 pt-3 px-3 relative">
         {/* Sliding active background */}
         <div
           className="absolute transition-all duration-500 ease-out rounded-full border border-accent-blue/30 bg-accent-blue/15 shadow-[0_0_20px_var(--accent-blue)]"
@@ -63,7 +63,7 @@ export default function GlassyNavBar({
             width: `calc((100% - 24px) / 5)`,
             top: "12px",
             height: "48px",
-            // Opacity for shadow hack if needed, but var(--accent-blue) is solid. 
+            // Opacity for shadow hack if needed, but var(--accent-blue) is solid.
             // Let's use opacity in color-mix if supported or just the variable.
             // Simplified shadow for theme compatibility:
             boxShadow: "0 0 20px rgba(var(--primary-rgb), 0.4)",
@@ -82,14 +82,16 @@ export default function GlassyNavBar({
             >
               <Link
                 href={tab.href}
-                className="flex items-center justify-center p-[12px] relative rounded-[100px] shrink-0 transition-all duration-300"
+                className="flex items-center justify-center p-3 relative rounded-full shrink-0 transition-all duration-300"
               >
-                <div className="w-[24px] h-[24px] flex items-center justify-center">
+                <div className="w-6 h-6 flex items-center justify-center">
                   <Icon
                     size={24}
                     strokeWidth={2}
                     // Active: Electric Blue (#007BFF), Secondary Text: Light Gray (#B0B0B0)
-                    stroke={isActive ? "var(--primary)" : "var(--text-secondary)"}
+                    stroke={
+                      isActive ? "var(--primary)" : "var(--text-secondary)"
+                    }
                     fill="none"
                     className="transition-all duration-300"
                     style={{
@@ -104,7 +106,6 @@ export default function GlassyNavBar({
           );
         })}
       </div>
-
     </div>
   );
 }

@@ -13,7 +13,7 @@ interface Result {
 }
 
 const base64ToFile = (dataUrl: string, filename: string) => {
-  const arr = dataUrl.split(',');
+  const arr = dataUrl.split(",");
   const mime = arr[0].match(/:(.*?);/)![1];
   const bstr = atob(arr[1]);
   let n = bstr.length;
@@ -24,26 +24,23 @@ const base64ToFile = (dataUrl: string, filename: string) => {
   return new File([u8arr], filename, { type: mime });
 };
 
-const submitLostItem = async (
-  imageBase64: string | null
-): Promise<Result> => {
-   if (!imageBase64) throw new Error("No image data");
+const submitLostItem = async (imageBase64: string | null): Promise<Result> => {
+  if (!imageBase64) throw new Error("No image data");
 
-   const file = base64ToFile(imageBase64, "capture.jpg");
-   const fd = new FormData();
-   fd.append("file", file);
+  const file = base64ToFile(imageBase64, "capture.jpg");
+  const fd = new FormData();
+  fd.append("file", file);
 
-   const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/search`, {
-     method: "POST",
-     body: fd,
-   });
-   return await res.json();
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/search`, {
+    method: "POST",
+    body: fd,
+  });
+  return await res.json();
 };
 
 export default function Page() {
   const [openConfirm, setOpenConfirm] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
-
 
   const [loading, setLoading] = useState(false);
 
@@ -94,14 +91,14 @@ export default function Page() {
   };
 
   const stopCamera = () => {
-      if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-          streamRef.current = null;
-      }
-      if (videoRef.current) {
-          videoRef.current.srcObject = null;
-      }
-      setCameraActive(false);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
   };
 
   useEffect(() => {
@@ -112,50 +109,60 @@ export default function Page() {
 
   const capturePhoto = async () => {
     if (videoRef.current && canvasRef.current) {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        
-        // 1. Capture at full video resolution (likely 4:3 or 16:9 depending on device)
-        // Or force 3:4 aspect ratio crop
-        const videoW = video.videoWidth;
-        const videoH = video.videoHeight;
-        
-        // Target aspect ratio 3:4 (0.75)
-        const targetRatio = 3/4;
-        
-        let cropW, cropH, cropX, cropY;
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
 
-        // Determine crop area to maintain 3:4 ratio from the video stream center
-        if (videoW / videoH > targetRatio) {
-           // Video is wider than 3:4 (e.g. 16:9 or 4:3) -> crop width
-           cropH = videoH;
-           cropW = cropH * targetRatio;
-           cropX = (videoW - cropW) / 2;
-           cropY = 0;
-        } else {
-           // Video is taller than 3:4 (unlikely for webcam, but possible) -> crop height
-           cropW = videoW;
-           cropH = cropW / targetRatio;
-           cropX = 0;
-           cropY = (videoH - cropH) / 2;
-        }
+      // 1. Capture at full video resolution (likely 4:3 or 16:9 depending on device)
+      // Or force 3:4 aspect ratio crop
+      const videoW = video.videoWidth;
+      const videoH = video.videoHeight;
 
-        canvas.width = cropW;
-        canvas.height = cropH;
-        
-        const context = canvas.getContext('2d');
-        if (context) {
-            // Draw only the cropped region
-            context.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-            
-            stopCamera();
-            setImageBase64(dataUrl);
-            setOpenConfirm(true);
-        }
+      // Target aspect ratio 3:4 (0.75)
+      const targetRatio = 3 / 4;
+
+      let cropW, cropH, cropX, cropY;
+
+      // Determine crop area to maintain 3:4 ratio from the video stream center
+      if (videoW / videoH > targetRatio) {
+        // Video is wider than 3:4 (e.g. 16:9 or 4:3) -> crop width
+        cropH = videoH;
+        cropW = cropH * targetRatio;
+        cropX = (videoW - cropW) / 2;
+        cropY = 0;
+      } else {
+        // Video is taller than 3:4 (unlikely for webcam, but possible) -> crop height
+        cropW = videoW;
+        cropH = cropW / targetRatio;
+        cropX = 0;
+        cropY = (videoH - cropH) / 2;
+      }
+
+      canvas.width = cropW;
+      canvas.height = cropH;
+
+      const context = canvas.getContext("2d");
+      if (context) {
+        // Draw only the cropped region
+        context.drawImage(
+          video,
+          cropX,
+          cropY,
+          cropW,
+          cropH,
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+        );
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+
+        stopCamera();
+        setImageBase64(dataUrl);
+        setOpenConfirm(true);
+      }
     }
   };
-   
+
   const uploadFromGallery = async () => {
     const photo = await Camera.getPhoto({
       source: CameraSource.Photos,
@@ -168,23 +175,26 @@ export default function Page() {
       setOpenConfirm(true);
     }
   };
+  type TorchConstraint = MediaTrackConstraintSet & {
+    torch?: boolean;
+  };
 
   // Note: Flash control via getUserMedia - works on Android Chrome/WebView, limited on iOS
   const toggleFlash = async () => {
     if (!streamRef.current) return;
-    
+
     const track = streamRef.current.getVideoTracks()[0];
     if (!track) return;
 
     try {
       // Toggle torch logic using advanced constraints
       const newFlashState = !flashOn;
-      
+
       // Need to cast to any because TS DOM types doesn't fully support 'torch' yet
       await track.applyConstraints({
-        advanced: [{ torch: newFlashState } as any]
+        advanced: [{ torch: newFlashState } as TorchConstraint],
       });
-      
+
       setFlashOn(newFlashState);
     } catch (err) {
       console.error("Error toggling flash:", err);
@@ -207,10 +217,10 @@ export default function Page() {
       const data = await submitLostItem(imageBase64);
       setResult(data);
     } catch (error) {
-       console.error("Submission error", error);
-       // Handle match: false or error state if needed
+      console.error("Submission error", error);
+      // Handle match: false or error state if needed
     }
-    setOpenConfirm(false); 
+    setOpenConfirm(false);
     setLoading(false);
   };
 
@@ -255,22 +265,22 @@ export default function Page() {
               className="relative overflow-hidden shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)] bg-card-bg rounded-3xl"
               style={{
                 width: "100%",
-                maxWidth: "600px",  // Increased max width
+                maxWidth: "600px", // Increased max width
                 aspectRatio: "4 / 5", // Between 1:1 and 3:4
               }}
             >
               {/* VIDEO */}
-                <video 
-                    ref={videoRef}
-                    autoPlay 
-                    playsInline 
-                    muted
-                    onCanPlay={() => setVideoReady(true)}
-                    className={`w-full h-full object-cover transition-opacity duration-500 ease-out ${
-                      videoReady ? "opacity-100" : "opacity-0"
-                    }`}
-                />
-              
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                onCanPlay={() => setVideoReady(true)}
+                className={`w-full h-full object-cover transition-opacity duration-500 ease-out ${
+                  videoReady ? "opacity-100" : "opacity-0"
+                }`}
+              />
+
               {/* LOADING SPINNER (Visible when video not ready) */}
               {!videoReady && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -317,16 +327,17 @@ export default function Page() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-             {/* TOP BAR WITH CROSS ICON */}
-             <div className="absolute top-10 left-6 z-10 p-2 bg-black/50 rounded-full backdrop-blur-md border border-white/10"
-                  onClick={() => {
-                    setOpenConfirm(false);
-                    setImageBase64(null);
-                    startCamera();
-                  }}
-             >
-                <X size={24} className="text-white" />
-             </div>
+            {/* TOP BAR WITH CROSS ICON */}
+            <div
+              className="absolute top-10 left-6 z-10 p-2 bg-black/50 rounded-full backdrop-blur-md border border-white/10"
+              onClick={() => {
+                setOpenConfirm(false);
+                setImageBase64(null);
+                startCamera();
+              }}
+            >
+              <X size={24} className="text-white" />
+            </div>
 
             <div className="flex-1 flex items-center justify-center pt-24">
               <img
@@ -383,7 +394,7 @@ export default function Page() {
             <p className="text-secondary-text text-center mb-6">
               {result.match
                 ? `We found a likely match for "${result.item}".`
-                : `We couldn’t find a match for "${result.item}" yet.`}
+                : `We couldn’t find a match this time. Try again with a clearer photo.`}
             </p>
 
             <button
