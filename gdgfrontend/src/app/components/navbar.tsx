@@ -66,7 +66,7 @@ export default function GlassyNavBar({
             // Opacity for shadow hack if needed, but var(--accent-blue) is solid. 
             // Let's use opacity in color-mix if supported or just the variable.
             // Simplified shadow for theme compatibility:
-            boxShadow: "0 0 20px rgba(0, 123, 255, 0.4)",
+            boxShadow: "0 0 20px rgba(var(--primary-rgb), 0.4)",
             pointerEvents: "none",
           }}
         />
@@ -89,12 +89,12 @@ export default function GlassyNavBar({
                     size={24}
                     strokeWidth={2}
                     // Active: Electric Blue (#007BFF), Secondary Text: Light Gray (#B0B0B0)
-                    stroke={isActive ? "#007BFF" : "var(--text-secondary)"}
+                    stroke={isActive ? "var(--primary)" : "var(--text-secondary)"}
                     fill="none"
                     className="transition-all duration-300"
                     style={{
                       filter: isActive
-                        ? "drop-shadow(0 0 6px rgba(0, 123, 255, 0.5))"
+                        ? "drop-shadow(0 0 6px rgba(var(--primary-rgb), 0.5))"
                         : "none",
                     }}
                   />

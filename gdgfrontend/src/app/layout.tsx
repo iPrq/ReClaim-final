@@ -4,6 +4,7 @@ import "./globals.css";
 import ClientLayout from "@/app/client-layout";
 import { Jersey_10 } from "next/font/google";
 import { ThemeProvider } from "@/app/components/theme-provider";
+import { ThemeColorProvider } from "@/app/components/theme-color-provider";
 
 export const jersey = Jersey_10({
   subsets: ["latin"],
@@ -43,7 +44,9 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <ClientLayout>{children}</ClientLayout>
+          <ThemeColorProvider>
+            <ClientLayout>{children}</ClientLayout>
+          </ThemeColorProvider>
         </ThemeProvider>
       </body>
     </html>

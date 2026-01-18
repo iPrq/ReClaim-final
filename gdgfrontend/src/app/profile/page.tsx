@@ -18,10 +18,12 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
+import { useThemeColor } from "@/app/components/theme-color-provider";
 
 export default function ProfileApp() {
   const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { themeColor, setThemeColor } = useThemeColor();
   const [mounted, setMounted] = useState(false);
   const [firebaseUser, setFirebaseUser] = useState<any>(auth.currentUser);
   const [screen, setScreen] = useState("profile");
@@ -202,6 +204,26 @@ export default function ProfileApp() {
                             onToggle={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")} 
                           />
                          <div className="h-px bg-border-custom my-1 mx-4" />
+                         
+                         {/* Theme Color Selector */}
+                         <div className="flex items-center justify-between p-4 rounded-xl hover:bg-btn-hover transition-colors text-foreground cursor-pointer">
+                           <span className="font-medium">App Theme</span>
+                           <div className="flex items-center gap-3">
+                              {(['blue', 'red', 'green'] as const).map((color) => (
+                                <button
+                                  key={color}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setThemeColor(color);
+                                  }}
+                                  className={`w-6 h-6 rounded-full transition-all ${themeColor === color ? "ring-2 ring-offset-2 ring-foreground scale-110 shadow-lg" : "opacity-50 hover:opacity-100"}`}
+                                  style={{ backgroundColor: color === 'blue' ? '#007BFF' : color === 'red' ? '#EF4444' : '#10B981' }}
+                                />
+                              ))}
+                           </div>
+                         </div>
+                         <div className="h-px bg-border-custom my-1 mx-4" />
+
                          <SettingItem label="Language" value="English" />
                        </div>
                     </>

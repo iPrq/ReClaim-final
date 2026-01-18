@@ -53,8 +53,14 @@ export default function LostAndFound() {
             foundLocation: "Unknown Location",
             currentLocation: "RV University",
             images: [
-              item.thumbnail ??
-                "https://via.placeholder.com/400x300?text=No+Image",
+              item.thumbnail
+                ? item.thumbnail.startsWith("http") ||
+                  item.thumbnail.startsWith("data:")
+                  ? item.thumbnail
+                  : `${BACKEND_URL}${
+                      item.thumbnail.startsWith("/") ? "" : "/"
+                    }${item.thumbnail}`
+                : "https://via.placeholder.com/400x300?text=No+Image",
             ],
             dateReported: new Date().toISOString(),
             type: "found",
