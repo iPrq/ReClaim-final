@@ -1,20 +1,12 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-const BACKEND_HOSTNAME = BACKEND_URL
-  ? new URL(BACKEND_URL).hostname
-  : undefined;
-
 const config: CapacitorConfig = {
   appId: "com.lostfound.app",
   appName: "reclaim",
   webDir: "out",
-
   server: {
     cleartext: false,
-
-    allowNavigation: BACKEND_HOSTNAME ? [BACKEND_HOSTNAME] : [],
+    allowNavigation: ["campus-search-api-680513043824.us-central1.run.app"],
   },
 };
 

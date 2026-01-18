@@ -19,25 +19,26 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useThemeColor } from "@/app/components/theme-color-provider";
-import type { User } from "firebase/auth";
 
 export default function ProfileApp() {
   const router = useRouter();
-  const { setTheme, resolvedTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const { themeColor, setThemeColor } = useThemeColor();
-  const [firebaseUser, setFirebaseUser] = useState<User | null>(
-    auth.currentUser,
-  );
+  const [mounted, setMounted] = useState(false);
+  const [firebaseUser, setFirebaseUser] = useState<any>(auth.currentUser);
   const [screen, setScreen] = useState("profile");
   const [mobileNumber, setMobileNumber] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   useEffect(() => {
+    setMounted(true);
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setFirebaseUser(user);
     });
     return () => unsubscribe();
   }, []);
+
+  if (!mounted) return null; // Avoid hydration mismatch
 
   const handleSignOut = async () => {
     if (window.confirm("Are you sure you want to sign out?")) {
@@ -81,13 +82,13 @@ export default function ProfileApp() {
                 <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
               </header>
 
-              <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-blue-600 to-indigo-900 p-6 shadow-2xl">
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-900 p-6 shadow-2xl">
                 <div className="relative z-10">
                   <ProfileHeader
                     light
                     name={getUserName()}
                     email={getUserEmail()}
-                    photoUrl={getPhotoUrl() ?? undefined}
+                    photoUrl={getPhotoUrl()}
                   />
                 </div>
                 {/* Decorative circle */}
@@ -156,7 +157,7 @@ export default function ProfileApp() {
                         <div className="relative h-24 w-24 rounded-full border-4 border-btn-bg overflow-hidden bg-btn-bg shadow-xl">
                           {getPhotoUrl() ? (
                             <img
-                              src={getPhotoUrl() || ""}
+                              src={getPhotoUrl()}
                               alt="Profile"
                               className="h-full w-full object-cover"
                             />
@@ -259,7 +260,7 @@ export default function ProfileApp() {
 
                 {screen === "about" && (
                   <div className="text-center space-y-6 pt-10">
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20">
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20">
                       <School size={40} className="text-white" />
                     </div>
                     <div>
@@ -297,14 +298,8 @@ export default function ProfileApp() {
 }
 
 // Components
-type ProfileHeaderProps = {
-  light?: boolean;
-  name: string;
-  email: string;
-  photoUrl?: string | null;
-};
 
-function ProfileHeader({ light, name, email, photoUrl }: ProfileHeaderProps) {
+function ProfileHeader({ light, name, email, photoUrl }: any) {
   return (
     <div className="flex flex-col items-center text-center">
       <div
@@ -312,8 +307,8 @@ function ProfileHeader({ light, name, email, photoUrl }: ProfileHeaderProps) {
       >
         {photoUrl ? (
           <img
-            src={photoUrl || ""}
-            alt="Profile picture"
+            src={photoUrl}
+            alt="propic"
             className="h-full w-full object-cover"
           />
         ) : (
@@ -336,16 +331,8 @@ function ProfileHeader({ light, name, email, photoUrl }: ProfileHeaderProps) {
     </div>
   );
 }
-import type { LucideIcon } from "lucide-react";
 
-type MenuCardProps = {
-  icon: LucideIcon;
-  title: string;
-  subtitle: string;
-  onClick: () => void;
-};
-
-function MenuCard({ icon: Icon, title, subtitle, onClick }: MenuCardProps) {
+function MenuCard({ icon: Icon, title, subtitle, onClick }: any) {
   return (
     <div
       onClick={onClick}
@@ -366,12 +353,7 @@ function MenuCard({ icon: Icon, title, subtitle, onClick }: MenuCardProps) {
   );
 }
 
-type SubPageHeaderProps = {
-  title: string;
-  onBack: () => void;
-};
-
-function SubPageHeader({ title, onBack }: SubPageHeaderProps) {
+function SubPageHeader({ title, onBack }: any) {
   return (
     <div className="flex items-center gap-4 py-2">
       <button
@@ -385,15 +367,6 @@ function SubPageHeader({ title, onBack }: SubPageHeaderProps) {
   );
 }
 
-type InfoRowProps = {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  editable?: boolean;
-  onChange?: (val: string) => void;
-  placeholder?: string;
-};
-
 function InfoRow({
   icon: Icon,
   label,
@@ -401,7 +374,7 @@ function InfoRow({
   editable,
   onChange,
   placeholder,
-}: InfoRowProps) {
+}: any) {
   return (
     <div className="flex items-center gap-4 rounded-xl bg-btn-bg p-3">
       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background text-secondary-text">
@@ -414,7 +387,7 @@ function InfoRow({
         {editable ? (
           <input
             value={value}
-            onChange={(e) => onChange?.(e.target.value)}
+            onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             className="w-full bg-transparent text-sm font-medium text-foreground placeholder:text-secondary-text outline-none"
           />
@@ -436,14 +409,7 @@ function PrimaryButton({ label }: { label: string }) {
   );
 }
 
-type SwitchCardProps = {
-  title: string;
-  subtitle: string;
-  checked: boolean;
-  onToggle: () => void;
-};
-
-function SwitchCard({ title, subtitle, checked, onToggle }: SwitchCardProps) {
+function SwitchCard({ title, subtitle, checked, onToggle }: any) {
   return (
     <div
       className="flex items-center justify-between rounded-2xl border border-border-custom bg-card-bg p-4 cursor-pointer hover:bg-btn-hover transition-colors"
@@ -464,12 +430,7 @@ function SwitchCard({ title, subtitle, checked, onToggle }: SwitchCardProps) {
   );
 }
 
-type SettingItemProps = {
-  label: string;
-  value: string;
-};
-
-function SettingItem({ label, value }: SettingItemProps) {
+function SettingItem({ label, value }: any) {
   return (
     <div className="flex items-center justify-between p-4 rounded-xl hover:bg-btn-hover transition-colors cursor-pointer text-foreground">
       <span className="font-medium">{label}</span>
